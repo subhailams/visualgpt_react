@@ -30,16 +30,16 @@ app.get('/fetch-image', async (req, res) => {
   }
 });
 
-// app.post('/api/dalle', async (req, res) => {
-//   res.send("Endpoint is working");
-// });
+
 app.post('/api/dalle',cors(), async (req, res) => {
   try {
     const prompt = req.body.prompt;
+   
     // const responseData = {
     //   imageUrl: "https://fastly.picsum.photos/id/0/5000/3333.jpg?hmac=_j6ghY5fCfSD6tvtcV74zXivkJSPIfR9B8w34XeQmvU", // Replace with your dummy image URL
-    //   // Add any other relevant fields you need for the dummy response
     // };
+
+
     // // Make a request to the DALL·E API
     const dalleResponse = await openai.createImage({
       prompt: `${prompt}`,
