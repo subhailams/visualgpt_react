@@ -31,41 +31,6 @@ const AnnotationPage = () => {
     }
   }, []);
 
-    // const originalImageUrl = localStorage.getItem('original-image');
-    // if (originalImageUrl) {
-    //   fetch(originalImageUrl, { mode: 'cors' })
-    //     .then(response => {
-    //       if (!response.ok) {
-    //         throw new Error(`HTTP error! status: ${response.status}`);
-    //       }
-    //       return response.blob();
-    //     })
-    //     .then(blob => {
-    //       const url = URL.createObjectURL(blob);
-    //       setFetchedImage(url);
-    //     })
-    //     .catch(e => {
-    //       console.error('Error fetching the image: ', e);
-    //     });
-    // } else {
-    //   console.error('No original image found in local storage');
-    // }
-  // }, []);
-
-//   useEffect(() => {
-    
-
-//     fetch(decodeURIComponent(imageUrl), { 
-//       mode: 'cors',
-//       headers: headers 
-//     })
-//     .then(response => response.blob())
-//     .then(blob => {
-//       const url = URL.createObjectURL(blob);
-//       setFetchedImage(url);
-//     })
-//     .catch(e => console.error(e));
-//   }, [imageUrl]);
 
 const initializeMarkerJS = () => {
   if (imgRef.current) {
