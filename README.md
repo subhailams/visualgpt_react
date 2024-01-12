@@ -5,7 +5,7 @@ This project consists of a Node.js server and a React front-end application.
 ## Demo Video
 
 
-[![Demo Video](URL_of_your_thumbnail)](https://drive.google.com/file/d/1Ywsx_bAfu3B1vkTaSQ4yM7S2gwroEzKf/view?usp=sharing
+[![Demo Video]](https://drive.google.com/file/d/1Ywsx_bAfu3B1vkTaSQ4yM7S2gwroEzKf/view?usp=sharing
 )
 
 ## Technology Stack
