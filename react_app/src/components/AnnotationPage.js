@@ -45,8 +45,7 @@ const initializeMarkerJS = () => {
 };
 
 
-
-  const saveAnnotatedImage = () => {
+const saveAnnotatedImage = () => {
     if (markerAreaRef.current) {
       markerAreaRef.current.render().then((dataUrl) => {
         try {
@@ -71,7 +70,7 @@ const initializeMarkerJS = () => {
             ref={imgRef}
             src={fetchedImage}
             alt="Annotate"
-            style={{ width: '100%', maxWidth: '100%', cursor: 'pointer' }}
+            style={{ width: '80%', maxWidth: '80%', cursor: 'pointer' }}
             onClick={initializeMarkerJS}
           />
           <button

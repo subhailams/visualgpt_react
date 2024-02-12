@@ -23,18 +23,48 @@ const isBase64Image = (str) => {
 
 const Message = (props) => {
   const { id, createdAt, content, ai = false, selected, isImage } = props.message;
-  console.log(content);
 
-  console.log(isBase64Image(content))
   return (
     <div
       key={id}
       className={`${ai && 'flex-row-reverse bg-light-white'} message`}>
       {selected === 'DALL·E' && ai ? (
-
-        isBase64Image(content) ? <img className='message__img' src={content} alt="Annotated" style={{ maxWidth: '100%' }} /> : <Image url={content} />
-     
+        isImage ? (
+          // <img className='message__img' src={content} alt="Annotated" />
+          <Image url={content}/>
         ) : (
+          <div className='message__wrapper'>
+            <ReactMarkdown
+              className={`message__markdown ${ai ? 'text-left' : 'text-right'}`}
+              children={content}
+              remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+              components={{
+                code({ node, inline, className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || 'language-js');
+                  return !inline && match ? (
+                    <SyntaxHighlighter
+                      children={String(children).replace(/\n$/, '')}
+                      style={atomDark}
+                      language={match[1]}
+                      PreTag='div'
+                      {...props}
+                    />
+                  ) : (
+                    <code className={className} {...props}>
+                      {children}{' '}
+                    </code>
+                  );
+                },
+              }}
+            />
+
+            <div
+              className={`${ai ? 'text-left' : 'text-right'} message__createdAt`}>
+              {moment(createdAt).calendar()}
+            </div>
+          </div>
+        )
+      ) : (
         <div className='message__wrapper'>
           <ReactMarkdown
             className={`message__markdown ${ai ? 'text-left' : 'text-right'}`}
@@ -71,14 +101,10 @@ const Message = (props) => {
         {ai ? (
           <MdComputer />
         ) : (
-
           <MdPerson />
         )}
       </div>
     </div>
-
-
-
   );
 };
 

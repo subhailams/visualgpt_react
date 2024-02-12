@@ -17,7 +17,7 @@ const MainChat = () => {
   const options = ['DALL·E'];
   const [selected, setSelected] = useState(options[0]);
   const [messages, addMessage] = useContext(ChatContext);
-
+  const [annotationDone, setAnnotationDone] = useState(false);
 
 
   /*
@@ -91,10 +91,10 @@ const MainChat = () => {
   
       // Assuming the server response contains the imageUrl
       if (data && data.imageUrl) {
-        // Save the original image URL to local storage
-        localStorage.setItem('original-image', data.imageUrl);
-  
+        localStorage.setItem('image_path', data.imageUrl);
+        uploadImageToServer(data.imageUrl)
         updateMessage(data.imageUrl, true, aiModel, true); // Set isImage to true
+        
       }
     } catch (err) {
       window.alert(`Error: ${err.message} please try again later`);
@@ -103,7 +103,37 @@ const MainChat = () => {
     setLoading(false);
   };
   
-  
+  const uploadImageToServer = async (imageDataUrl) => {
+    try {
+        // Convert data URL to blob for file upload
+        const response = await fetch(imageDataUrl);
+        const blob = await response.blob();
+        const formData = new FormData();
+        formData.append('image', blob, 'image.png'); // 'image' should match your server's expected field
+
+        // Replace 'http://localhost:3001/upload' with your actual upload endpoint
+        const uploadResponse = await fetch('http://localhost:3001/upload', {
+            method: 'POST',
+            body: formData,
+        });
+        
+        if (uploadResponse.ok) {
+            const data = await uploadResponse.json();
+            if (data.imagePath) {
+                console.log('Image saved on server:', data.imagePath);
+                // Save the image path to local storage
+                localStorage.setItem('image_path', data.imagePath);
+                // Optionally, handle the success case, e.g., displaying a success message or navigating
+            }
+        } else {
+            throw new Error('Upload failed: ' + uploadResponse.statusText);
+        }
+    } catch (error) {
+        console.error('Upload failed:', error);
+        // Handle upload error, e.g., displaying an error message
+    }
+};
+
 
   /**
    * Scrolls the chat area to the bottom when the messages array is updated.
@@ -119,20 +149,38 @@ const MainChat = () => {
     inputRef.current.focus();
   }, []);
 
-
-  const checkAndSendAnnotatedImage = () => {
-    const annotatedImageUrl = localStorage.getItem('annotated-image');
-    if (annotatedImageUrl) {
-      updateMessage(annotatedImageUrl, true, 'DALL·E', true); // Assuming `true` flags an image message
-      localStorage.removeItem('annotated-image'); // Optionally remove the image after sending
+  const checkAndSendAnnotatedImage = async () => {
+    try {
+      // Fetch the annotated image from the server
+      const response = await fetch('http://localhost:3001/uploads/image.png');
+  
+      // Check if the response is OK (status code 200)
+      if (response.ok) {
+        // If the image exists, update the message with the annotated image URL
+        updateMessage('http://localhost:3001/uploads/image.png', true, selected, true); // Assuming `true` flags an image message
+        updateMessage('What do you want to do with this image?', true, selected);
+      }
+    } catch (error) {
+      // If an error occurs during the fetch request, log the error
+      console.error('Error fetching annotated image:', error);
     }
   };
 
-  useEffect(() => {
-    checkAndSendAnnotatedImage();
-  }, []); // Empty dependency array ensures this runs once on mount
 
-  
+// useEffect to call checkAndSendAnnotatedImage when annotation is done
+useEffect(() => {
+  // Get the annotationDone value from local storage
+  const annotationDone = JSON.parse(localStorage.getItem('annotationDone'));
+
+  // Check if annotationDone is true
+  if (annotationDone) {
+      checkAndSendAnnotatedImage();
+      localStorage.setItem('annotationDone', false);
+  }
+
+}, []);
+
+
   return (
     <div className='chatview'>
       <main className='chatview__chatarea'>
