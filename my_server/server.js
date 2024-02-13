@@ -5,11 +5,22 @@ import { OpenAIApi, Configuration } from 'openai';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import fs from 'fs';
+import Replicate from "replicate";
+import addBackgroundToPNG from './lib/add-background-to-png.js';
+
 
 import path from 'path';
 dotenv.config();
 
+
+const replicate = new Replicate({
+  auth: process.env.REPLICATE_API_TOKEN, // defaults to process.env.REPLICATE_API_TOKEN
+});
+
 const app = express();
+
+
+const API_HOST = process.env.REPLICATE_API_HOST
 
 app.use(cors());
 app.use(express.json());
@@ -76,6 +87,90 @@ app.post('/upload', upload.single('image'), (req, res) => {
   }
 });
 
+app.post('/image-generation',cors(), async (req, res) => {
+  try {
+    const { prompt } = req.body.prompt;
+
+    const model = "stability-ai/stable-diffusion:b3d14e1cd1f9470bbb0bb68cac48e5f483e5be309551992cc33dc30654a82bb7";
+    const input = {
+      prompt: prompt,
+    };
+    const output = await replicate.run(model, { input });
+    
+    return res.status(200).json(output);
+  
+  }
+  
+  catch (error) {
+        console.error('Error in /api/predictions:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+      }
+
+    });
+
+app.post('/predictions', async (req, res) => {
+      // Remove null and undefined values
+      let requestBody = Object.entries(req.body).reduce(
+        (acc, [key, value]) => (value == null ? acc : { ...acc, [key]: value }),
+        {}
+      );
+    
+      if (!requestBody.mask) {
+        requestBody.mask = req.body.init_image
+      }
+
+      console.log("___________________")
+      console.log(requestBody)
+      console.log("___________________")
+      try {
+        const response = await fetch(`${API_HOST}/v1/predictions`, {
+          method: "POST",
+          headers: {
+            Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            version: "be04660a5b93ef2aff61e3668dedb4cbeb14941e62a3fd5998364a32d613e35e",
+            input: requestBody,
+          }),
+        });
+    
+        if (response.status !== 201) {
+          const error = await response.json();
+          return res.status(500).json({ detail: error.detail });
+        }
+    
+        const prediction = await response.json();
+        res.status(201).json(prediction);
+      } catch (error) {
+        console.error('Error in /predictions:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+      }
+    });
+
+
+
+
+app.get('/predictions/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const response = await fetch(`${API_HOST}/v1/predictions/${id}`, {
+      headers: { Authorization: `Token ${process.env.REPLICATE_API_TOKEN}` },
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      return res.status(response.status).json({ message: error.detail });
+    }
+    const prediction = await response.json();
+    res.json(prediction); // Return the current prediction status
+  } catch (error) {
+    console.error('Error polling prediction status:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+    
+
 
 // app.post('/api/dalle', async (req, res) => {
 //   res.send("Endpoint is working");
@@ -84,7 +179,7 @@ app.post('/api/dalle',cors(), async (req, res) => {
   try {
     const prompt = req.body.prompt;
     const responseData = {
-      imageUrl: "https://fastly.picsum.photos/id/0/5000/3333.jpg?hmac=_j6ghY5fCfSD6tvtcV74zXivkJSPIfR9B8w34XeQmvU", // Replace with your dummy image URL
+      imageUrl: "https://replicate.delivery/pbxt/HtGQBfA5TrqFYZBf0UL18NTqHrzt8UiSIsAkUuMHtjvFDO6p/overture-creations-5sI6fQgYIuo.png", // Replace with your dummy image URL
       // Add any other relevant fields you need for the dummy response
     };
 

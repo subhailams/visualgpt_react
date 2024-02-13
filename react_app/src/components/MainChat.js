@@ -14,7 +14,7 @@ const MainChat = () => {
   const inputRef = useRef();
   const [formValue, setFormValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const options = ['DALL·E'];
+  const options = ['VisualGPT'];
   const [selected, setSelected] = useState(options[0]);
   const [messages, addMessage] = useContext(ChatContext);
   const [annotationDone, setAnnotationDone] = useState(false);
@@ -63,6 +63,7 @@ const MainChat = () => {
    *
    * @param {Event} e - The submit event of the form.
    */
+  
   const sendMessage = async (e) => {
     e.preventDefault();
   

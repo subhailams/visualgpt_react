@@ -9,7 +9,7 @@ const AnnotationCanvas = ({ onDraw }) => {
   const [canvasSize, setCanvasSize] = useState({ width: 500, height: 500 }); // Default size or dynamically set
 
   useEffect(() => {
-    const originalImageUrl = localStorage.getItem('original-image');
+    const originalImageUrl = localStorage.getItem('image_path');
     if (originalImageUrl) {
       const proxyUrl = `http://localhost:3001/fetch-image?url=${encodeURIComponent(originalImageUrl)}`;
       fetch(proxyUrl)
@@ -130,7 +130,7 @@ const uploadImageToServer = async (imageDataUrl) => {
         {/* ReactSketchCanvas as overlay */}
         <ReactSketchCanvas
           ref={canvasRef}
-          strokeWidth={30} // Adjusted for finer lines
+          strokeWidth={100} // Adjusted for finer lines
           strokeColor="black"
           canvasColor="transparent"
           onChange={onDraw}

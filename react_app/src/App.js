@@ -2,11 +2,14 @@ import React from 'react';
 import { ChatContextProvider } from './context/chatContext';
 import SideBar from './components/SideBar';
 import MainChat from './components/MainChat';
-import AnnotationPage from './components/AnnotationPage'; // Import AnnotationPage
+import AnnotationCanvas from './components/AnnotationCanvas'; // Import AnnotationPage
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'; // Import Routes and Route
 
 const App = () => {
+  localStorage.setItem('annotationDone', false);
+
+
   return (
     <ChatContextProvider>
       <Router>
@@ -14,7 +17,7 @@ const App = () => {
           <SideBar />
           <Routes>
             <Route path="/" element={<MainChat />} />
-            <Route path="/annotate/:imageUrl" element={<AnnotationPage />} /> {/* Use route parameter :imageUrl */}
+            <Route path="/annotate/:imageUrl" element={<AnnotationCanvas />} /> {/* Use route parameter :imageUrl */}
           </Routes>
         </div>
       </Router>

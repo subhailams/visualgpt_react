@@ -28,7 +28,7 @@ const Message = (props) => {
     <div
       key={id}
       className={`${ai && 'flex-row-reverse bg-light-white'} message`}>
-      {selected === 'DALL·E' && ai ? (
+      {selected === 'VisualGPT' && ai ? (
         isImage ? (
           // <img className='message__img' src={content} alt="Annotated" />
           <Image url={content}/>
