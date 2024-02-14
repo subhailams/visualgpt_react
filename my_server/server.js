@@ -7,6 +7,7 @@ import multer from 'multer';
 import fs from 'fs';
 import Replicate from "replicate";
 import addBackgroundToPNG from './lib/add-background-to-png.js';
+import bodyParser from "body-parser";
 
 
 import path from 'path';
@@ -18,6 +19,9 @@ const replicate = new Replicate({
 });
 
 const app = express();
+
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 
 const API_HOST = process.env.REPLICATE_API_HOST
@@ -108,19 +112,16 @@ app.post('/image-generation',cors(), async (req, res) => {
 
     });
 
-app.post('/predictions', async (req, res) => {
+app.post('/predictions',cors(), async (req, res) => {
       // Remove null and undefined values
-      let requestBody = Object.entries(req.body).reduce(
-        (acc, [key, value]) => (value == null ? acc : { ...acc, [key]: value }),
+      req.body = Object.entries(req.body).reduce(
+        (a, [k, v]) => (v == null ? a : ((a[k] = v), a)),
         {}
       );
     
-      if (!requestBody.mask) {
-        requestBody.mask = req.body.init_image
-      }
 
       console.log("___________________")
-      console.log(requestBody)
+      console.log(req)
       console.log("___________________")
       try {
         const response = await fetch(`${API_HOST}/v1/predictions`, {
@@ -131,7 +132,7 @@ app.post('/predictions', async (req, res) => {
           },
           body: JSON.stringify({
             version: "be04660a5b93ef2aff61e3668dedb4cbeb14941e62a3fd5998364a32d613e35e",
-            input: requestBody,
+            input: req.body,
           }),
         });
     

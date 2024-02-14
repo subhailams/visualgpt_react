@@ -6,7 +6,7 @@ const AnnotationCanvas = ({ onDraw }) => {
   const canvasRef = useRef(null);
   const [fetchedImage, setFetchedImage] = useState('');
   const navigate = useNavigate();
-  const [canvasSize, setCanvasSize] = useState({ width: 500, height: 500 }); // Default size or dynamically set
+  const [canvasSize, setCanvasSize] = useState({ width: 512, height: 512 }); // Default size or dynamically set
 
   useEffect(() => {
     const originalImageUrl = localStorage.getItem('image_path');
@@ -41,8 +41,10 @@ const AnnotationCanvas = ({ onDraw }) => {
 
     backgroundImg.onload = async () => {
         // Use the natural dimensions of the fetched image or scale it
-        let width = backgroundImg.naturalWidth;
-        let height = backgroundImg.naturalHeight;
+        // let width = backgroundImg.naturalWidth;
+        // let height = backgroundImg.naturalHeight;
+        let width = 512;
+        let height = 512;
 
         // Export the ReactSketchCanvas drawing as an image
         const sketchDataUrl = await canvasRef.current.exportImage('image/png');
@@ -66,82 +68,95 @@ const AnnotationCanvas = ({ onDraw }) => {
             const combinedDataUrl = offscreenCanvas.toDataURL('image/png');
 
             // Upload the combined image to the server
-            uploadImageToServer(combinedDataUrl);
+            uploadImageToServer(combinedDataUrl, 'image_sktech.png');
             localStorage.setItem('annotationDone', true);
+        };
+
+        const offscreenCanvas1 = document.createElement('canvas');
+        offscreenCanvas1.width = width;
+        offscreenCanvas1.height = height;
+        const ctx1 = offscreenCanvas1.getContext('2d');
+
+        // Fill the canvas with white background
+        ctx1.fillStyle = '#FFFFFF'; // Set fill color to white
+        ctx1.fillRect(0, 0, width, height); // Fill the canvas area with white
+
+        // Then overlay the sketch image
+        const sketchImg1 = new Image();
+        sketchImg1.src = sketchDataUrl;
+        sketchImg1.onload = () => {
+            ctx1.drawImage(sketchImg1, 0, 0, width, height);
+            // Now offscreenCanvas contains the sketch over a white background
+            const combinedDataUrl1 = offscreenCanvas1.toDataURL('image/png');
+            // Proceed with uploading the combined image as before
+            uploadImageToServer(combinedDataUrl1, 'mask.png');
         };
     };
 };
 
 
-const uploadImageToServer = async (imageDataUrl) => {
-    try {
-        // Convert data URL to blob for file upload
-        const response = await fetch(imageDataUrl);
-        const blob = await response.blob();
-        const formData = new FormData();
-        formData.append('image', blob, 'image.png'); // 'image' should match your server's expected field
 
-        // Replace 'http://localhost:3001/upload' with your actual upload endpoint
-        const uploadResponse = await fetch('http://localhost:3001/upload', {
-            method: 'POST',
-            body: formData,
-        });
-        
-        if (uploadResponse.ok) {
-            const data = await uploadResponse.json();
-            if (data.imagePath) {
-                console.log('Image saved on server:', data.imagePath);
-                // Save the image path to local storage
-                localStorage.setItem('image_path', data.imagePath);
-                // Optionally, handle the success case, e.g., displaying a success message or navigating
-            }
-        } else {
-            throw new Error('Upload failed: ' + uploadResponse.statusText);
-        }
-    } catch (error) {
-        console.error('Upload failed:', error);
-        // Handle upload error, e.g., displaying an error message
-    }
+const uploadImageToServer = async (imageDataUrl, filename) => {
+  // Convert data URL to blob for file upload
+  const response = await fetch(imageDataUrl);
+  const blob = await response.blob();
+  const formData = new FormData();
+  formData.append('image', blob, filename); // Use 'mask.png' or 'image.png' based on the argument
+
+  const uploadEndpoint = 'http://localhost:3001/upload'; // Adjust if necessary
+  try {
+      const uploadResponse = await fetch(uploadEndpoint, {
+          method: 'POST',
+          body: formData,
+      });
+      
+      if (!uploadResponse.ok) throw new Error('Upload failed: ' + uploadResponse.statusText);
+      
+      const data = await uploadResponse.json();
+      console.log(`${filename} saved on server:`, data.imagePath);
+      localStorage.setItem(filename, data.imagePath); // Save path as mask.png or image.png
+  } catch (error) {
+      console.error('Upload failed:', error);
+  }
 };
-
 
   const goBackToChat = () => {
     navigate('/');
   };
 
-  const backgroundStyle = {
-    backgroundImage: `url(${fetchedImage})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    width: '90%',
-    height: '80%',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 0
-  };
+  // const backgroundStyle = {
+  //   backgroundImage: `url(${fetchedImage})`,
+  //   backgroundSize: 'cover',
+  //   backgroundPosition: 'center',
+  //   width: '90%',
+  //   height: '80%',
+  //   position: 'relative',
+  //   top: 0,
+  //   left: 0,
+  //   zIndex: 0
+  // };
 
   return (
-    <div style={{ width: '90%',  alignItems: 'center', marginTop: '20px', marginBottom: '5px' }}>
-      <div style={{ position: 'relative', width: '90%', height: '80%' }}>
-        {/* Background image */}
-        <div style={backgroundStyle}></div>
+  <div style={{ width: '90%', alignItems: 'center', marginTop: '20px', marginLeft: '20px'}}>
+    <div style={{ position: 'relative',justifyContent: 'center', width: '80%', height: '80%' }}>
+      {/* Display image directly */}
+      <img src={fetchedImage} alt="Fetched" style={{ width: '90%', height: '90%', position: 'absolute', top: 0, left: '5%', zIndex: 0 }} />
+
+      {/* ReactSketchCanvas as overlay */}
+      <ReactSketchCanvas
+        ref={canvasRef}
+        strokeWidth={100} // Adjusted for finer lines
+        strokeColor="black"
+        canvasColor="transparent"
+        onChange={onDraw}
+        style={{ position: 'absolute', top: 0, left: '5%', width: '90%', height: '90%' }}
+      />
+    </div>
         
-        {/* ReactSketchCanvas as overlay */}
-        <ReactSketchCanvas
-          ref={canvasRef}
-          strokeWidth={100} // Adjusted for finer lines
-          strokeColor="black"
-          canvasColor="transparent"
-          onChange={onDraw}
-          style={{ position: 'relative', width: '90%', height: '80%' }}
-        />
-      </div>
-      
       {/* Buttons displayed below the canvas */}
-      <div style={{ display: 'flex', justifyContent: 'center', width: '80%', marginTop: '5px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', width: '80%' }}>
         <button onClick={saveAnnotatedImage} style={buttonStyle}>
-          Save Annotated Image
+          Save Image
         </button>
         
         <button onClick={goBackToChat} style={{ ...buttonStyle, marginLeft: '10px' }}>
@@ -153,7 +168,7 @@ const uploadImageToServer = async (imageDataUrl) => {
 };
 
 const buttonStyle = {
-  marginTop: '10px',
+  marginTop: '2px',
   padding: '10px 20px',
   backgroundColor: '#4CAF50',
   color: 'white',

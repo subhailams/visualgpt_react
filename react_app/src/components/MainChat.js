@@ -17,8 +17,10 @@ const MainChat = () => {
   const options = ['VisualGPT'];
   const [selected, setSelected] = useState(options[0]);
   const [messages, addMessage] = useContext(ChatContext);
-  const [annotationDone, setAnnotationDone] = useState(false);
-
+  const [isannotationDone, setAnnotationDone] = useState(false);
+  const [predictions, setPredictions] = useState([]);
+  
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   /*
   Scrolls the chat area to the bottom.
@@ -58,6 +60,18 @@ const MainChat = () => {
     }
   };
 
+
+  async function urlToDataUrl(url) {
+    const response = await fetch(url);
+    const blob = await response.blob(); // Convert the response to a Blob
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onerror = reject;
+      fr.onload = () => resolve(fr.result);
+      fr.readAsDataURL(blob); // Read the Blob as Data URL
+    });
+  }
+
   /**
    * Sends our prompt to our API and get response to our request from openai.
    *
@@ -73,7 +87,8 @@ const MainChat = () => {
     setLoading(true);
     setFormValue('');
     updateMessage(newMsg, false, aiModel);
-  
+    console.log()
+    if (!isannotationDone) {
     try {
       // Call your server endpoint
       const response = await fetch('http://localhost:3001/api/dalle', {
@@ -102,46 +117,117 @@ const MainChat = () => {
     }
   
     setLoading(false);
-  };
-  
-  const uploadImageToServer = async (imageDataUrl) => {
+  }
+  if (isannotationDone) {
+
     try {
-        // Convert data URL to blob for file upload
-        const response = await fetch(imageDataUrl);
-        const blob = await response.blob();
-        const formData = new FormData();
-        formData.append('image', blob, 'image.png'); // 'image' should match your server's expected field
+      const prompt = formValue;
+      const originalImageUrl = localStorage.getItem('image.png');
+      const maskImageUrl = localStorage.getItem('mask.png');
+      
+      const originalImage = await urlToDataUrl(originalImageUrl)
+      const maskImage = await urlToDataUrl(maskImageUrl)
 
-        // Replace 'http://localhost:3001/upload' with your actual upload endpoint
-        const uploadResponse = await fetch('http://localhost:3001/upload', {
-            method: 'POST',
-            body: formData,
-        });
+      // Construct the request body
+      const requestBody = JSON.stringify({
+        prompt: prompt,
+        init_image: originalImage,
+        mask: maskImage,
+      });
+
+      // Call the predictions API
+      const predictionsResponse = await fetch('http://localhost:3001/predictions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: requestBody
+      });
+
+      if (!predictionsResponse.ok) {
+        throw new Error(`HTTP error! status: ${predictionsResponse.status}`);
+      }
+
+      let prediction = await predictionsResponse.json();
+
+      // Handle the predictions response, e.g., displaying the result
+      console.log(prediction);
+      
+      setPredictions(predictions.concat([prediction]));
+      
+
+      while (
+        prediction.status !== "succeeded" &&
+        prediction.status !== "failed"
+      ) {
+        await sleep(1000);
         
-        if (uploadResponse.ok) {
-            const data = await uploadResponse.json();
-            if (data.imagePath) {
-                console.log('Image saved on server:', data.imagePath);
-                // Save the image path to local storage
-                localStorage.setItem('image_path', data.imagePath);
-                // Optionally, handle the success case, e.g., displaying a success message or navigating
+          // Use the id to call the predictions status endpoint
+          const response = await fetch(`http://localhost:3001/predictions/${prediction.id}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: process.env.REPLICATE_API_TOKEN // Ensure you're using the correct auth method
             }
-        } else {
-            throw new Error('Upload failed: ' + uploadResponse.statusText);
-        }
-    } catch (error) {
-        console.error('Upload failed:', error);
-        // Handle upload error, e.g., displaying an error message
-    }
-};
+          });
 
+        
+        console.log("___________________")
+        console.log(response)
+        console.log("___________________")
+        prediction = await response.json();
+       
+        setPredictions(predictions.concat([prediction]));
+  
+        
+      }
+      if (prediction.status == 'succeeded') {
+        uploadImageToServer(prediction.output, 'prediction.png')
+        updateMessage(prediction.output, true, aiModel, true);
+        setLoading(false);
+
+      }
+      // Code here to call predictions/id to pass the id from predictionsData.id
+      
+
+      
+    } catch (err) {
+      window.alert(`Error: ${err.message} please try again later`);
+    }
+
+  }
+
+};
+  
+const uploadImageToServer = async (imageDataUrl, filename) => {
+  // Convert data URL to blob for file upload
+  const response = await fetch(imageDataUrl);
+  const blob = await response.blob();
+  const formData = new FormData();
+  formData.append('image', blob, filename); // Use 'mask.png' or 'image.png' based on the argument
+
+  const uploadEndpoint = 'http://localhost:3001/upload'; // Adjust if necessary
+  try {
+      const uploadResponse = await fetch(uploadEndpoint, {
+          method: 'POST',
+          body: formData,
+      });
+      
+      if (!uploadResponse.ok) throw new Error('Upload failed: ' + uploadResponse.statusText);
+      
+      const data = await uploadResponse.json();
+      console.log(`${filename} saved on server:`, data.imagePath);
+      localStorage.setItem(filename, data.imagePath); // Save path as mask.png or image.png
+  } catch (error) {
+      console.error('Upload failed:', error);
+  }
+};
 
   /**
    * Scrolls the chat area to the bottom when the messages array is updated.
    */
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, loading]);
+  // useEffect(() => {
+  //   scrollToBottom();
+  // }, [messages, loading]);
 
   /**
    * Focuses the TextArea input to when the component is first rendered.
@@ -158,8 +244,8 @@ const MainChat = () => {
       // Check if the response is OK (status code 200)
       if (response.ok) {
         // If the image exists, update the message with the annotated image URL
-        updateMessage('http://localhost:3001/uploads/image.png', true, selected, true); // Assuming `true` flags an image message
-        updateMessage('What do you want to do with this image?', true, selected);
+        updateMessage('http://localhost:3001/uploads/image_sktech.png', true, selected, true); // Assuming `true` flags an image message
+        updateMessage('What do you want to do with this image?',true, "filler", false);
       }
     } catch (error) {
       // If an error occurs during the fetch request, log the error
@@ -176,6 +262,7 @@ useEffect(() => {
   // Check if annotationDone is true
   if (annotationDone) {
       checkAndSendAnnotatedImage();
+      setAnnotationDone(true);
       localStorage.setItem('annotationDone', false);
   }
 
