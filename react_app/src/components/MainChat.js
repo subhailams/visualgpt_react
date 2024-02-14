@@ -91,7 +91,7 @@ const MainChat = () => {
     if (!isannotationDone) {
     try {
       // Call your server endpoint
-      const response = await fetch('http://localhost:3001/api/dalle', {
+      const response = await fetch('http://localhost:3001/predictions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -103,14 +103,35 @@ const MainChat = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
   
-      const data = await response.json();
-  
-      // Assuming the server response contains the imageUrl
-      if (data && data.imageUrl) {
-        localStorage.setItem('image_path', data.imageUrl);
-        uploadImageToServer(data.imageUrl)
-        updateMessage(data.imageUrl, true, aiModel, true); // Set isImage to true
+      let img_prediction = await response.json();
+
+      while (
+        img_prediction.status !== "succeeded" &&
+        img_prediction.status !== "failed"
+      ) {
+        await sleep(1000);
         
+          // Use the id to call the predictions status endpoint
+          const response = await fetch(`http://localhost:3001/predictions/${img_prediction.id}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: process.env.REPLICATE_API_TOKEN // Ensure you're using the correct auth method
+            }
+          });
+
+        
+        console.log("___________________")
+        console.log(response)
+        console.log("___________________")
+        img_prediction = await response.json();
+         
+        
+      }
+      if (img_prediction.status == 'succeeded') {
+        uploadImageToServer(img_prediction.output, 'image.png')
+        updateMessage(img_prediction.output, true, aiModel, true);
+        setLoading(false);
+
       }
     } catch (err) {
       window.alert(`Error: ${err.message} please try again later`);
