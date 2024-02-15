@@ -9,7 +9,7 @@ const AnnotationCanvas = ({ onDraw }) => {
   const [canvasSize, setCanvasSize] = useState({ width: 512, height: 512 }); // Default size or dynamically set
 
   useEffect(() => {
-    const originalImageUrl = localStorage.getItem('image_path');
+    const originalImageUrl = localStorage.getItem('image.png');
     if (originalImageUrl) {
       const proxyUrl = `http://localhost:3001/fetch-image?url=${encodeURIComponent(originalImageUrl)}`;
       fetch(proxyUrl)
