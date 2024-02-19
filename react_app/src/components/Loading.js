@@ -16,7 +16,7 @@ const Loading = () => {
         </div>
         <div className='text-left message__createdAt'>
           <div className="message__thinking">
-            Loading..
+            Generating..
           </div>
         </div>
       </div>

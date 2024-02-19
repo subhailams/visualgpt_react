@@ -138,6 +138,7 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
 
   return (
   <div style={{ width: '90%', alignItems: 'center', marginTop: '20px', marginLeft: '20px'}}>
+      <h1 style={{ width: '80%', textAlign: 'center', marginBottom: '10px' }}>Select area of the Image that you would like to edit.</h1>
     <div style={{ position: 'relative',justifyContent: 'center', width: '80%', height: '80%' }}>
       {/* Display image directly */}
       <img src={fetchedImage} alt="Fetched" style={{ width: '90%', height: '90%', position: 'absolute', top: 0, left: '5%', zIndex: 0 }} />
@@ -145,7 +146,7 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
       {/* ReactSketchCanvas as overlay */}
       <ReactSketchCanvas
         ref={canvasRef}
-        strokeWidth={100} // Adjusted for finer lines
+        strokeWidth={200} // Adjusted for finer lines
         strokeColor="black"
         canvasColor="transparent"
         onChange={onDraw}

@@ -12,7 +12,8 @@ A chat view component that displays a list of messages and a form for sending ne
 const MainChat = () => {
   const messagesEndRef = useRef();
   const inputRef = useRef();
-  const [formValue, setFormValue] = useState('');
+  const defaultPrompt = 'Enter prompt to generate image';
+  const [formValue, setFormValue] = useState(defaultPrompt);
   const [loading, setLoading] = useState(false);
   const options = ['VisualGPT'];
   const [selected, setSelected] = useState(options[0]);
@@ -30,7 +31,30 @@ const MainChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  /**
+
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleFocus = (e) => {
+    if (e.target.value === defaultPrompt) {
+      setFormValue('');
+      setIsFocused(true); // Set focused state to true
+    }
+  };
+
+  const handleBlur = (e) => {
+    if (!e.target.value) {
+      setFormValue(defaultPrompt);
+      setIsFocused(false); // Reset on blur if empty
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormValue(e.target.value);
+    if (!e.target.value) {
+      setIsFocused(false);
+    }
+  };
+    /**
    * Adds a new message to the chat.
    *
    * @param {string} newValue - The text of the new message.
@@ -90,49 +114,54 @@ const MainChat = () => {
     console.log()
     if (!isannotationDone) {
     try {
-      // Call your server endpoint
-      const response = await fetch('http://localhost:3001/predictions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ prompt: formValue }) // Send the prompt as JSON
-      });
+      console.log("Testing")
+      await sleep(5000);
+      uploadImageToServer("http://localhost:3001/uploads/demo.png", 'image.png')
+      updateMessage("http://localhost:3001/uploads/demo.png", true, aiModel, true);
+     
+      // // Call your server endpoint
+      // const response = await fetch('http://localhost:3001/predictions', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: JSON.stringify({ prompt: formValue }) // Send the prompt as JSON
+      // });
   
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      // if (!response.ok) {
+      //   throw new Error(`HTTP error! status: ${response.status}`);
+      // }
   
-      let img_prediction = await response.json();
+      // let img_prediction = await response.json();
 
-      while (
-        img_prediction.status !== "succeeded" &&
-        img_prediction.status !== "failed"
-      ) {
-        await sleep(1000);
+      // while (
+      //   img_prediction.status !== "succeeded" &&
+      //   img_prediction.status !== "failed"
+      // ) {
+      //   await sleep(1000);
         
-          // Use the id to call the predictions status endpoint
-          const response = await fetch(`http://localhost:3001/predictions/${img_prediction.id}`, {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: process.env.REPLICATE_API_TOKEN // Ensure you're using the correct auth method
-            }
-          });
+      //     // Use the id to call the predictions status endpoint
+      //     const response = await fetch(`http://localhost:3001/predictions/${img_prediction.id}`, {
+      //       headers: {
+      //         'Content-Type': 'application/json',
+      //         Authorization: process.env.REPLICATE_API_TOKEN // Ensure you're using the correct auth method
+      //       }
+      //     });
 
         
-        console.log("___________________")
-        console.log(response)
-        console.log("___________________")
-        img_prediction = await response.json();
+      //   console.log("___________________")
+      //   console.log(response)
+      //   console.log("___________________")
+      //   img_prediction = await response.json();
          
         
-      }
-      if (img_prediction.status == 'succeeded') {
-        uploadImageToServer(img_prediction.output, 'image.png')
-        updateMessage(img_prediction.output, true, aiModel, true);
-        setLoading(false);
+      // }
+      // if (img_prediction.status == 'succeeded') {
+      //   uploadImageToServer(img_prediction.output, 'image.png')
+      //   updateMessage(img_prediction.output, true, aiModel, true);
+      //   setLoading(false);
 
-      }
+      // }
     } catch (err) {
       window.alert(`Error: ${err.message} please try again later`);
     }
@@ -302,19 +331,20 @@ useEffect(() => {
         <span ref={messagesEndRef}></span>
       </main>
       <form className='form' onSubmit={sendMessage}>
-        <select
+        {/* <select
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
           className='dropdown'>
           <option>{options[0]}</option>
-        </select>
+        </select> */}
         <div className='flex items-stretch justify-between w-full'>
           <textarea
             ref={inputRef}
-            className='chatview__textarea-message'
+            className={`chatview__textarea-message ${formValue === defaultPrompt && !isFocused ? 'text-gray-500' : 'text-black'} ...otherClasses`}
             value={formValue}
+            onFocus={handleFocus}
             onKeyDown={handleKeyDown}
-            onChange={(e) => setFormValue(e.target.value)}
+            onChange={handleChange}
           />
           <button
             type='submit'
