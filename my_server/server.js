@@ -91,26 +91,55 @@ app.post('/upload', upload.single('image'), (req, res) => {
   }
 });
 
-app.post('/image-generation',cors(), async (req, res) => {
+
+app.post('/text-only-predictions',cors(), async (req, res) => {
+  // Remove null and undefined values
+  req.body = Object.entries(req.body).reduce(
+    (a, [k, v]) => (v == null ? a : ((a[k] = v), a)),
+    {}
+  );
+
+
+  console.log("___________________")
+  console.log(req)
+  console.log("___________________")
   try {
-    const { prompt } = req.body.prompt;
-
-    const model = "stability-ai/stable-diffusion:b3d14e1cd1f9470bbb0bb68cac48e5f483e5be309551992cc33dc30654a82bb7";
-    const input = {
-      prompt: prompt,
-    };
-    const output = await replicate.run(model, { input });
-    
-    return res.status(200).json(output);
-  
-  }
-  
-  catch (error) {
-        console.error('Error in /api/predictions:', error);
-        return res.status(500).json({ message: 'Internal Server Error' });
-      }
-
+    const response = await fetch(
+      `${API_HOST}/v1/predictions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version: "30c1d0b916a6f8efce20493f5d61ee27491ab2a60437c13c588468b9810ec23f",
+        input:  {
+          image: req.body.image,
+          prompt: req.body.prompt,
+          scheduler: "K_EULER_ANCESTRAL",
+          num_outputs: 1,
+          guidance_scale: 7.5,
+          num_inference_steps: 100,
+          image_guidance_scale: 1.5
+        },
+      }),
     });
+
+    if (response.status !== 201) {
+      const error = await response.json();
+      return res.status(500).json({ detail: error.detail });
+    }
+
+    const prediction = await response.json();
+    res.status(201).json(prediction);
+  } catch (error) {
+    console.error('Error in /text-only-predictions:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+
+
 
 app.post('/predictions',cors(), async (req, res) => {
       // Remove null and undefined values
@@ -119,7 +148,6 @@ app.post('/predictions',cors(), async (req, res) => {
         {}
       );
     
-
       console.log("___________________")
       console.log(req)
       console.log("___________________")

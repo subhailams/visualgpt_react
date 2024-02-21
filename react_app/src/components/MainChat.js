@@ -115,53 +115,54 @@ const MainChat = () => {
     if (!isannotationDone) {
     try {
       console.log("Testing")
-      await sleep(5000);
-      uploadImageToServer("http://localhost:3001/uploads/demo.png", 'image.png')
-      updateMessage("http://localhost:3001/uploads/demo.png", true, aiModel, true);
-     
-      // // Call your server endpoint
-      // const response = await fetch('http://localhost:3001/predictions', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify({ prompt: formValue }) // Send the prompt as JSON
-      // });
-  
-      // if (!response.ok) {
-      //   throw new Error(`HTTP error! status: ${response.status}`);
-      // }
-  
-      // let img_prediction = await response.json();
+      // await sleep(5000);
+      // updateMessage("http://localhost:3001/uploads/demo.png", true, aiModel, true);
+      const originalImageUrl = localStorage.getItem('image.png');
+      const originalImage = await urlToDataUrl(originalImageUrl)
 
-      // while (
-      //   img_prediction.status !== "succeeded" &&
-      //   img_prediction.status !== "failed"
-      // ) {
-      //   await sleep(1000);
+      // Call your server endpoint
+      const response = await fetch('http://localhost:3001/text-only-predictions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ image: originalImage, prompt: formValue }) // Send the prompt as JSON
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      let img_prediction = await response.json();
+
+      while (
+        img_prediction.status !== "succeeded" &&
+        img_prediction.status !== "failed"
+      ) {
+        await sleep(1000);
         
-      //     // Use the id to call the predictions status endpoint
-      //     const response = await fetch(`http://localhost:3001/predictions/${img_prediction.id}`, {
-      //       headers: {
-      //         'Content-Type': 'application/json',
-      //         Authorization: process.env.REPLICATE_API_TOKEN // Ensure you're using the correct auth method
-      //       }
-      //     });
+          // Use the id to call the predictions status endpoint
+          const response = await fetch(`http://localhost:3001/predictions/${img_prediction.id}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: process.env.REPLICATE_API_TOKEN // Ensure you're using the correct auth method
+            }
+          });
 
         
-      //   console.log("___________________")
-      //   console.log(response)
-      //   console.log("___________________")
-      //   img_prediction = await response.json();
+        console.log("___________________")
+        console.log(response)
+        console.log("___________________")
+        img_prediction = await response.json();
          
         
-      // }
-      // if (img_prediction.status == 'succeeded') {
-      //   uploadImageToServer(img_prediction.output, 'image.png')
-      //   updateMessage(img_prediction.output, true, aiModel, true);
-      //   setLoading(false);
+      }
+      if (img_prediction.status == 'succeeded') {
+        uploadImageToServer(img_prediction.output[0], 'image.png')
+        updateMessage(img_prediction.output[0], true, aiModel, true);
+        setLoading(false);
 
-      // }
+      }
     } catch (err) {
       window.alert(`Error: ${err.message} please try again later`);
     }
