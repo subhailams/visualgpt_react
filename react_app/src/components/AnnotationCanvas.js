@@ -146,7 +146,7 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
       {/* ReactSketchCanvas as overlay */}
       <ReactSketchCanvas
         ref={canvasRef}
-        strokeWidth={200} // Adjusted for finer lines
+        strokeWidth={100} // Adjusted for finer lines
         strokeColor="black"
         canvasColor="transparent"
         onChange={onDraw}

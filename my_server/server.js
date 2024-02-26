@@ -8,6 +8,7 @@ import fs from 'fs';
 import Replicate from "replicate";
 import addBackgroundToPNG from './lib/add-background-to-png.js';
 import bodyParser from "body-parser";
+import axios from 'axios';
 
 
 import path from 'path';
@@ -41,7 +42,7 @@ const openai = new OpenAIApi(configuration);
 app.use('/uploads', express.static('uploads'));
 
 
-app.get('/fetch-image', async (req, res) => {
+app.get('/fetch-image',cors(), async (req, res) => {
   try {
     const imageUrl = req.query.url;
     const response = await fetch(imageUrl);
@@ -69,7 +70,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // POST endpoint for uploading images
-app.post('/upload', upload.single('image'), (req, res) => {
+app.post('/upload', cors(), upload.single('image'), (req, res) => {
   try {
     // Check if a file was uploaded
     if (!req.file) {
@@ -94,11 +95,6 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
 app.post('/text-only-predictions',cors(), async (req, res) => {
   // Remove null and undefined values
-  req.body = Object.entries(req.body).reduce(
-    (a, [k, v]) => (v == null ? a : ((a[k] = v), a)),
-    {}
-  );
-
 
   console.log("___________________")
   console.log(req)
@@ -112,15 +108,10 @@ app.post('/text-only-predictions',cors(), async (req, res) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version: "30c1d0b916a6f8efce20493f5d61ee27491ab2a60437c13c588468b9810ec23f",
+        version: "ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4",
         input:  {
-          image: req.body.image,
           prompt: req.body.prompt,
-          scheduler: "K_EULER_ANCESTRAL",
-          num_outputs: 1,
-          guidance_scale: 7.5,
-          num_inference_steps: 100,
-          image_guidance_scale: 1.5
+
         },
       }),
     });
@@ -180,6 +171,9 @@ app.post('/predictions',cors(), async (req, res) => {
 
 
 
+
+
+
 app.get('/predictions/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -200,6 +194,28 @@ app.get('/predictions/:id', async (req, res) => {
 
     
 
+app.post('/instruct', cors(), async (req, res) => {
+  // Extract data from the incoming request
+  const { image_url, prompt } = req.body; // Adjust based on what you're forwarding
+
+  // Define the URL of your Django endpoint
+  const djangoEndpoint = 'http://127.0.0.1:8000/instruct/api';
+
+  try {
+      // Forward the request to the Django endpoint
+      const response = await axios.post(djangoEndpoint, {
+          image_url: image_url, // Adjust these fields based on the expected Django request format
+          prompt: prompt,
+      });
+
+      // Send the response back to the original client
+      res.json(response.data);
+  } catch (error) {
+      console.error('Error calling Django app:', error.message);
+      // Handle errors, such as by forwarding the error from the Django app or customizing the message
+      res.status(500).json({ success: false, message: 'Failed to call Django app' });
+  }
+});
 
 // app.post('/api/dalle', async (req, res) => {
 //   res.send("Endpoint is working");

@@ -20,6 +20,8 @@ const MainChat = () => {
   const [messages, addMessage] = useContext(ChatContext);
   const [isannotationDone, setAnnotationDone] = useState(false);
   const [predictions, setPredictions] = useState([]);
+  const [isgenerationDone, setGenerationDone] = useState(false);
+
   
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -112,62 +114,111 @@ const MainChat = () => {
     setFormValue('');
     updateMessage(newMsg, false, aiModel);
     console.log()
+
     if (!isannotationDone) {
-    try {
-      console.log("Testing")
-      // await sleep(5000);
-      // updateMessage("http://localhost:3001/uploads/demo.png", true, aiModel, true);
-      const originalImageUrl = localStorage.getItem('image.png');
-      const originalImage = await urlToDataUrl(originalImageUrl)
+      // const generationDone = JSON.parse(localStorage.getItem('generationDone'));
+      if (isgenerationDone){
+        console.log("Instructing....")
 
-      // Call your server endpoint
-      const response = await fetch('http://localhost:3001/text-only-predictions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ image: originalImage, prompt: formValue }) // Send the prompt as JSON
-      });
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-  
-      let img_prediction = await response.json();
+        const originalImageUrl = localStorage.getItem('image.png');
 
-      while (
-        img_prediction.status !== "succeeded" &&
-        img_prediction.status !== "failed"
-      ) {
-        await sleep(1000);
-        
-          // Use the id to call the predictions status endpoint
-          const response = await fetch(`http://localhost:3001/predictions/${img_prediction.id}`, {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: process.env.REPLICATE_API_TOKEN // Ensure you're using the correct auth method
+        // Code to call the instruct api to get image url
+          try {
+            // Construct the request to the Express server which will forward it to Django
+            const instructResponse = await fetch('http://localhost:3001/instruct', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                image_url: originalImageUrl, // Ensure this is the correct URL or path to the image
+                prompt: formValue, // The user's input that will be used for processing
+              })
+            });
+
+            if (!instructResponse.ok) {
+              throw new Error(`HTTP error! Status: ${instructResponse.status}`);
             }
-          });
+
+            const instructData = await instructResponse.json();
+            console.log(instructData)
+            // Assuming instructData contains the URL to the processed image
+            if (instructData) {
+              // Update the chat with the new image
+              console.log(instructData.image_url)
+              // uploadImageToServer(instructData.image_url, 'image.png')
+              updateMessage(instructData.image_url, true, aiModel, true); // Update with the image path
+              setLoading(false);
+            }
+          } catch (error) {
+            console.error('Error calling instruct API:', error);
+            setLoading(false);
+            // Handle the error, maybe show a message to the user
+          }
+
+      }
+    else{
+    try {
+
+      setLoading(true);
+      console.log("Generating....")
+
+      setGenerationDone(true);
+      setLoading(false);
+      const originalImageUrl = localStorage.getItem('image.png');
+      updateMessage(originalImageUrl, true, aiModel, true);
+
+
+      // // Call your server endpoint
+      // const response = await fetch('http://localhost:3001/text-only-predictions', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: JSON.stringify({ prompt: formValue }) // Send the prompt as JSON
+      // });
+  
+      // if (!response.ok) {
+      //   throw new Error(`HTTP error! status: ${response.status}`);
+      // }
+  
+      // let img_prediction = await response.json();
+
+      // while (
+      //   img_prediction.status !== "succeeded" &&
+      //   img_prediction.status !== "failed"
+      // ) {
+      //   await sleep(1000);
+        
+      //     // Use the id to call the predictions status endpoint
+      //     const response = await fetch(`http://localhost:3001/predictions/${img_prediction.id}`, {
+      //       headers: {
+      //         'Content-Type': 'application/json',
+      //         Authorization: process.env.REPLICATE_API_TOKEN // Ensure you're using the correct auth method
+      //       }
+      //     });
 
         
-        console.log("___________________")
-        console.log(response)
-        console.log("___________________")
-        img_prediction = await response.json();
+      //   console.log("___________________")
+      //   console.log(response)
+      //   console.log("___________________")
+      //   img_prediction = await response.json();
          
         
-      }
-      if (img_prediction.status == 'succeeded') {
-        uploadImageToServer(img_prediction.output[0], 'image.png')
-        updateMessage(img_prediction.output[0], true, aiModel, true);
-        setLoading(false);
+      // }
+      // if (img_prediction.status == 'succeeded') {
+      //   uploadImageToServer(img_prediction.output[0], 'image.png')
+      //   updateMessage(img_prediction.output[0], true, aiModel, true);
+      //   setGenerationDone(true);
+      //   setLoading(false);
 
-      }
+      // }
     } catch (err) {
       window.alert(`Error: ${err.message} please try again later`);
     }
-  
     setLoading(false);
+  }
+    
   }
   if (isannotationDone) {
 
@@ -232,7 +283,7 @@ const MainChat = () => {
         
       }
       if (prediction.status == 'succeeded') {
-        uploadImageToServer(prediction.output, 'prediction.png')
+        uploadImageToServer(prediction.output, 'image.png')
         updateMessage(prediction.output, true, aiModel, true);
         setLoading(false);
 
