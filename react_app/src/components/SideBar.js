@@ -5,10 +5,14 @@ import {
   MdAdd,
   MdOutlineVpnKey,
   MdPanoramaFishEye,
+  MdWidthFull,
 } from 'react-icons/md';
 import { AiOutlineGithub } from 'react-icons/ai';
 import { ChatContext } from '../context/chatContext';
-import bot from '../assets/visualgpt.png';
+import bot from '../assets/uic.png';
+import { max } from 'moment';
+import { useNavigate } from "react-router-dom";
+
 
 /*
   Sidebar Component
@@ -37,19 +41,30 @@ const SideBar = () => {
   }, []);
 
   const clearChat = () => clearMessages();
+  const navigate = useNavigate();
+
+  const navigateToText = () => {
+    clearMessages();
+    navigate('/text'); // Programmatically navigate to /text
+  };
+
+  const navigateToTextGesture = () => {
+    clearMessages();
+    navigate('/text_gesture'); // Programmatically navigate to /text_gesture
+  };
 
   return (
     <section className={` ${open ? 'w-64' : 'w-16'} sidebar`}>
       <div className='sidebar__app-bar'>
         <div className={`sidebar__app-logo ${!open && 'scale-0 hidden'}`}>
-          <span className='w-8 h-8'>
-            <img src={bot} alt='' />
+          <span className='w-6 h-6'>
+            <img style={{width: "100%", marginRight: 0}} src={bot} alt='' />
             {/* <MdPanoramaFishEye /> */}
           </span>
         </div>
-        <h1 className={`sidebar__app-title ${!open && 'scale-0 hidden'}`}>
-          VisualGPT
-        </h1>
+    <h1 className={`sidebar__app-title ${!open && 'scale-0 hidden'}`}>
+          ELICIT
+        </h1>    
         <div className={`sidebar__btn-close`} onClick={() => setOpen(!open)}>
           {open ? (
             <MdClose className='sidebar__btn-icon' />
@@ -61,11 +76,21 @@ const SideBar = () => {
       <div className='nav'>
         <span
           className='border nav__item border-neutral-600'
-          onClick={clearChat}>
+          onClick={navigateToText}>
           <div className='nav__icons'>
-            <MdAdd />
+            <MdMenu />
           </div>
-          <h1 className={`${!open && 'hidden'}`}>New chat</h1>
+          <h1 className={`${!open && 'hidden'}`}>Text Only</h1>
+        </span>
+      </div>
+      <div className='nav'>
+        <span
+          className='border nav__item border-neutral-600'
+          onClick={navigateToTextGesture}>
+          <div className='nav__icons'>
+            <MdMenu />
+          </div>
+          <h1 className={`${!open && 'hidden'}`}>Text with Gesture</h1>
         </span>
       </div>
 

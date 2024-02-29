@@ -77,8 +77,8 @@ const AnnotationCanvas = ({ onDraw }) => {
         offscreenCanvas1.height = height;
         const ctx1 = offscreenCanvas1.getContext('2d');
 
-        // Fill the canvas with white background
-        ctx1.fillStyle = '#FFFFFF'; // Set fill color to white
+        // Fill the canvas with black background
+        ctx1.fillStyle = '#000000'; // Set fill color to white
         ctx1.fillRect(0, 0, width, height); // Fill the canvas area with white
 
         // Then overlay the sketch image
@@ -121,7 +121,7 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
 };
 
   const goBackToChat = () => {
-    navigate('/');
+    navigate('/text_gesture');
   };
 
   // const backgroundStyle = {
@@ -147,7 +147,7 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
       <ReactSketchCanvas
         ref={canvasRef}
         strokeWidth={100} // Adjusted for finer lines
-        strokeColor="black"
+        strokeColor="white"
         canvasColor="transparent"
         onChange={onDraw}
         style={{ position: 'absolute', top: 0, left: '5%', width: '90%', height: '90%' }}

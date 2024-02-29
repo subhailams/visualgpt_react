@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 const Image = ({ url }) => {
   const navigate = useNavigate();
 
-
+  const openAnnotationTool = () => {
+    navigate(`/annotate/${encodeURIComponent(url)}`); // Encode the url
+  };
 
   return (
-    <div className='message__wrapper'>
+    <div className='message__wrapper' onClick={openAnnotationTool}>
       <img
         className='message__img'
         src={url}

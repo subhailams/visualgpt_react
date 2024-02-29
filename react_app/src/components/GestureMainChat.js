@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
-import Message from './Message';
+import Message from './GestureMessage';
 import { ChatContext } from '../context/chatContext';
 import Loading from './Loading';
 import { MdSend } from 'react-icons/md';
@@ -18,6 +18,7 @@ const MainChat = () => {
   const options = ['VisualGPT'];
   const [selected, setSelected] = useState(options[0]);
   const [messages, addMessage] = useContext(ChatContext);
+  const [isannotationDone, setAnnotationDone] = useState(false);
   const [predictions, setPredictions] = useState([]);
   const [isgenerationDone, setGenerationDone] = useState(false);
 
@@ -113,51 +114,11 @@ const MainChat = () => {
     setLoading(true);
     setFormValue('');
     updateMessage(newMsg, false, aiModel);
-    console.log()
+    console.log(isannotationDone)
     
+    if (!isannotationDone) {
       // const generationDone = JSON.parse(localStorage.getItem('generationDone'));
-      if (isgenerationDone){
-        console.log("Instructing....")
-
-        const originalImageUrl = localStorage.getItem('image.png');
-
-        // Code to call the instruct api to get image url
-          try {
-            // Construct the request to the Express server which will forward it to Django
-            const instructResponse = await fetch('http://localhost:3001/instruct', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                image_url: originalImageUrl, // Ensure this is the correct URL or path to the image
-                prompt: formValue, // The user's input that will be used for processing
-              })
-            });
-
-            if (!instructResponse.ok) {
-              throw new Error(`HTTP error! Status: ${instructResponse.status}`);
-            }
-
-            const instructData = await instructResponse.json();
-            console.log(instructData)
-            // Assuming instructData contains the URL to the processed image
-            if (instructData) {
-              // Update the chat with the new image
-              console.log(instructData.image_url)
-              // uploadImageToServer(instructData.image_url, 'image.png')
-              localStorage.setItem('image.png', instructData.image_url);
-              updateMessage(instructData.image_url, true, aiModel, true); // Update with the image path
-              setLoading(false);
-            }
-          } catch (error) {
-            console.error('Error calling instruct API:', error);
-            setLoading(false);
-            // Handle the error, maybe show a message to the user
-          }
-
-      }
-    else{
+ 
     try {
 
       setLoading(true);
@@ -175,8 +136,54 @@ const MainChat = () => {
     setLoading(false);
   }
     
-  
+  if (isannotationDone) {
+    console.log("Inpainting....")
 
+    const originalImageUrl = localStorage.getItem('image.png');
+    
+    const maskurl = localStorage.getItem('mask.png');
+
+    console.log(originalImageUrl)
+    console.log(maskurl)
+
+    // Code to call the instruct api to get image url
+      try {
+        // Construct the request to the Express server which will forward it to Django
+        const inpaintResponse = await fetch('http://localhost:3001/inpaint', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            image_url: originalImageUrl, // Ensure this is the correct URL or path to the image
+            mask_url: maskurl,
+            prompt: formValue, // The user's input that will be used for processing
+          })
+        });
+
+        if (!inpaintResponse.ok) {
+          throw new Error(`HTTP error! Status: ${inpaintResponse.status}`);
+        }
+
+        const inpaintData = await inpaintResponse.json();
+        console.log(inpaintData)
+        // Assuming inpaintData contains the URL to the processed image
+        if (inpaintData) {
+          // Update the chat with the new image
+          console.log(inpaintData.image_url)
+          // uploadImageToServer(inpaintData.image_url, 'image_new.png')
+          localStorage.setItem('image.png', inpaintData.image_url);
+          await sleep(100)
+          updateMessage(inpaintData.image_url, true, aiModel, true); // Update with the image path
+          setLoading(false);
+          setAnnotationDone(false);
+        }
+      } catch (error) {
+        console.error('Error calling inpaint API:', error);
+        setLoading(false);
+        // Handle the error, maybe show a message to the user
+      }
+  }
 
 };
   
@@ -216,12 +223,45 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
    * Focuses the TextArea input to when the component is first rendered.
    */
   useEffect(() => {
-    localStorage.setItem('image.png',"http://localhost:3001/uploads/image.png");
+    if (!isannotationDone){
+      localStorage.setItem('image.png',"http://localhost:3001/uploads/image.png");
+    }
+    
     inputRef.current.focus();
   }, []);
 
+  const checkAndSendAnnotatedImage = async () => {
+    try {
+      // Fetch the annotated image from the server
+      const response = await fetch('http://localhost:3001/uploads/image_sktech.png');
+  
+      // Check if the response is OK (status code 200)
+      if (response.ok) {
+        // If the image exists, update the message with the annotated image URL
+        updateMessage('http://localhost:3001/uploads/image_sktech.png', true, selected, true); // Assuming `true` flags an image message
+        updateMessage('What do you want to do with this image?',true, "filler", false);
+      }
+    } catch (error) {
+      // If an error occurs during the fetch request, log the error
+      console.error('Error fetching annotated image:', error);
+    }
+  };
 
 
+// useEffect to call checkAndSendAnnotatedImage when annotation is done
+useEffect(() => {
+  // Get the annotationDone value from local storage
+  const annotationDone = JSON.parse(localStorage.getItem('annotationDone'));
+
+  // Check if annotationDone is true
+  if (annotationDone) {
+      checkAndSendAnnotatedImage();
+      setAnnotationDone(true);
+      localStorage.setItem('annotationDone', false);
+      
+  }
+
+}, []);
 
 
   return (

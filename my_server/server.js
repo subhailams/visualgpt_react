@@ -192,6 +192,29 @@ app.get('/predictions/:id', async (req, res) => {
   }
 });
 
+app.post('/inpaint', cors(), async (req, res) => {
+  // Extract data from the incoming request
+  const { image_url,mask_url, prompt } = req.body; // Adjust based on what you're forwarding
+
+  // Define the URL of your Django endpoint
+  const djangoEndpoint = 'http://localhost:8000/api/inpaint';
+
+  try {
+      // Forward the request to the Django endpoint
+      const response = await axios.post(djangoEndpoint, {
+          image_url: image_url, // Adjust these fields based on the expected Django request format
+          mask_url : mask_url,
+          prompt: prompt,
+      });
+
+      // Send the response back to the original client
+      res.json(response.data);
+  } catch (error) {
+      console.error('Error calling Django app:', error.message);
+      // Handle errors, such as by forwarding the error from the Django app or customizing the message
+      res.status(500).json({ success: false, message: 'Failed to call Django app' });
+  }
+});
     
 
 app.post('/instruct', cors(), async (req, res) => {
@@ -199,7 +222,7 @@ app.post('/instruct', cors(), async (req, res) => {
   const { image_url, prompt } = req.body; // Adjust based on what you're forwarding
 
   // Define the URL of your Django endpoint
-  const djangoEndpoint = 'http://127.0.0.1:8000/instruct/api';
+  const djangoEndpoint = 'http://localhost:8000/api/instruct';
 
   try {
       // Forward the request to the Django endpoint

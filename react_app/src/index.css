@@ -24,6 +24,8 @@
 
   .sidebar__app-title {
     @apply text-white font-medium text-xl duration-300;
+    margin-right: 50px;
+    font-size: 1.6rem;
   }
 
   .sidebar__btn-close {
@@ -35,7 +37,7 @@
   }
 
   .sidebar__app-logo {
-    @apply cursor-pointer duration-300 text-white;
+    @apply justify-center cursor-pointer duration-300 text-white;
   }
 
   /* SideBar Nav */
