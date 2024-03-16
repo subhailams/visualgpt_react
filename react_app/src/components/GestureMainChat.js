@@ -115,25 +115,83 @@ const MainChat = () => {
     setFormValue('');
     updateMessage(newMsg, false, aiModel);
     console.log(isannotationDone)
+
     
     if (!isannotationDone) {
       // const generationDone = JSON.parse(localStorage.getItem('generationDone'));
  
-    try {
+    // try {
+    //   setLoading(true);
+    //   console.log("Generating....")
 
-      setLoading(true);
-      console.log("Generating....")
+    //   setGenerationDone(true);
+    //   setLoading(false);
+    //   const originalImageUrl = localStorage.getItem('image.png');
+    //   updateMessage(originalImageUrl, true, aiModel, true);
 
-      setGenerationDone(true);
-      setLoading(false);
+    // } catch (err) {
+    //   window.alert(`Error: ${err.message} please try again later`);
+    // }
+    // setLoading(false);
+
+    if (isgenerationDone){
+      console.log("Instructing....")
+
       const originalImageUrl = localStorage.getItem('image.png');
-      updateMessage(originalImageUrl, true, aiModel, true);
 
+      // Code to call the instruct api to get image url
+        try {
+          // Construct the request to the Express server which will forward it to Django
+          const instructResponse = await fetch('http://localhost:3001/instruct', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              image_url: originalImageUrl, // Ensure this is the correct URL or path to the image
+              prompt: formValue, // The user's input that will be used for processing
+            })
+          });
 
-    } catch (err) {
-      window.alert(`Error: ${err.message} please try again later`);
+          if (!instructResponse.ok) {
+            throw new Error(`HTTP error! Status: ${instructResponse.status}`);
+          }
+
+          const instructData = await instructResponse.json();
+          console.log(instructData)
+          // Assuming instructData contains the URL to the processed image
+          if (instructData) {
+            // Update the chat with the new image
+            console.log(instructData.image_url)
+            // uploadImageToServer(instructData.image_url, 'image.png')
+            localStorage.setItem('image.png', instructData.image_url);
+            updateMessage(instructData.image_url, true, aiModel, true); // Update with the image path
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('Error calling instruct API:', error);
+          setLoading(false);
+          // Handle the error, maybe show a message to the user
+        }
+
     }
-    setLoading(false);
+  else{
+        try {
+
+          setLoading(true);
+          console.log("Generating....")
+
+          setGenerationDone(true);
+          setLoading(false);
+          const originalImageUrl = localStorage.getItem('image.png');
+          updateMessage(originalImageUrl, true, aiModel, true);
+
+
+        } catch (err) {
+          window.alert(`Error: ${err.message} please try again later`);
+        }
+        setLoading(false);
+      }
   }
     
   if (isannotationDone) {
@@ -176,7 +234,6 @@ const MainChat = () => {
           await sleep(100)
           updateMessage(inpaintData.image_url, true, aiModel, true); // Update with the image path
           setLoading(false);
-          setAnnotationDone(false);
         }
       } catch (error) {
         console.error('Error calling inpaint API:', error);
@@ -223,9 +280,7 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
    * Focuses the TextArea input to when the component is first rendered.
    */
   useEffect(() => {
-    if (!isannotationDone){
-      localStorage.setItem('image.png',"http://localhost:3001/uploads/image.png");
-    }
+
     
     inputRef.current.focus();
   }, []);
@@ -252,6 +307,7 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
 useEffect(() => {
   // Get the annotationDone value from local storage
   const annotationDone = JSON.parse(localStorage.getItem('annotationDone'));
+  
 
   // Check if annotationDone is true
   if (annotationDone) {
@@ -260,6 +316,8 @@ useEffect(() => {
       localStorage.setItem('annotationDone', false);
       
   }
+
+
 
 }, []);
 

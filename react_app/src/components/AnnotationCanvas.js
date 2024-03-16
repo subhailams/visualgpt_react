@@ -6,10 +6,11 @@ const AnnotationCanvas = ({ onDraw }) => {
   const canvasRef = useRef(null);
   const [fetchedImage, setFetchedImage] = useState('');
   const navigate = useNavigate();
-  const [canvasSize, setCanvasSize] = useState({ width: 512, height: 512 }); // Default size or dynamically set
+  const [canvasSize, setCanvasSize] = useState({ width: 600, height: 400 }); // Default size or dynamically set
 
   useEffect(() => {
     const originalImageUrl = localStorage.getItem('image.png');
+    console.log(originalImageUrl)
     if (originalImageUrl) {
       const proxyUrl = `http://localhost:3001/fetch-image?url=${encodeURIComponent(originalImageUrl)}`;
       fetch(proxyUrl)
@@ -43,8 +44,8 @@ const AnnotationCanvas = ({ onDraw }) => {
         // Use the natural dimensions of the fetched image or scale it
         // let width = backgroundImg.naturalWidth;
         // let height = backgroundImg.naturalHeight;
-        let width = 512;
-        let height = 512;
+        let width = 600;
+        let height = 400;
 
         // Export the ReactSketchCanvas drawing as an image
         const sketchDataUrl = await canvasRef.current.exportImage('image/png');
@@ -119,6 +120,8 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
       console.error('Upload failed:', error);
   }
 };
+
+
 
   const goBackToChat = () => {
     navigate('/text_gesture');

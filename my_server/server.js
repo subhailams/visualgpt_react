@@ -192,6 +192,82 @@ app.get('/predictions/:id', async (req, res) => {
   }
 });
 
+app.post('/drag', cors(), async (req, res) => {
+  // Extract data from the incoming request
+  const { image_url,mask_url, selected_points } = req.body; // Adjust based on what you're forwarding
+
+  // Define the URL of your Django endpoint
+  const djangoEndpoint = 'http://localhost:8001/api/drag';
+
+  try {
+      // Forward the request to the Django endpoint
+      const response = await axios.post(djangoEndpoint, {
+          image_url: image_url, // Adjust these fields based on the expected Django request format
+          mask_url : mask_url,
+          selected_points: selected_points,
+      });
+
+      // Send the response back to the original client
+      res.json(response.data);
+  } catch (error) {
+      console.error('Error calling Django app:', error.message);
+      // Handle errors, such as by forwarding the error from the Django app or customizing the message
+      res.status(500).json({ success: false, message: 'Failed to call Django app' });
+  }
+});
+
+app.post('/move', cors(), async (req, res) => {
+  // Extract data from the incoming request
+  const { image_url,mask_url, selected_points } = req.body; // Adjust based on what you're forwarding
+
+  // Define the URL of your Django endpoint
+  const djangoEndpoint = 'http://localhost:8001/api/move';
+
+  try {
+      // Forward the request to the Django endpoint
+      const response = await axios.post(djangoEndpoint, {
+          image_url: image_url, // Adjust these fields based on the expected Django request format
+          mask_url : mask_url,
+          selected_points: selected_points,
+      });
+
+      // Send the response back to the original client
+      res.json(response.data);
+  } catch (error) {
+      console.error('Error calling Django app:', error.message);
+      // Handle errors, such as by forwarding the error from the Django app or customizing the message
+      res.status(500).json({ success: false, message: 'Failed to call Django app' });
+  }
+});
+
+
+app.post('/resize', cors(), async (req, res) => {
+  // Extract data from the incoming request
+  const { image_url,mask_url, resize_scale } = req.body; // Adjust based on what you're forwarding
+  
+  // Define the URL of your Django endpoint
+  const djangoEndpoint = 'http://localhost:8001/api/resize';
+
+  try {
+      // Forward the request to the Django endpoint
+      const response = await axios.post(djangoEndpoint, {
+          image_url: image_url, // Adjust these fields based on the expected Django request format
+          mask_url : mask_url,
+          resize_scale: resize_scale,
+      });
+
+      // Send the response back to the original client
+      res.json(response.data);
+  } catch (error) {
+      console.error('Error calling Django app:', error.message);
+      // Handle errors, such as by forwarding the error from the Django app or customizing the message
+      res.status(500).json({ success: false, message: 'Failed to call Django app' });
+  }
+});
+
+    
+
+
 app.post('/inpaint', cors(), async (req, res) => {
   // Extract data from the incoming request
   const { image_url,mask_url, prompt } = req.body; // Adjust based on what you're forwarding
