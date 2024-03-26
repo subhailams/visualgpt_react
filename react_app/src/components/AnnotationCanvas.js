@@ -4,13 +4,12 @@ import { useNavigate } from "react-router-dom";
 
 const AnnotationCanvas = ({ onDraw }) => {
   const canvasRef = useRef(null);
-  const [fetchedImage, setFetchedImage] = useState('');
+  const [fetchedImage1, setFetchedImage] = useState('');
   const navigate = useNavigate();
-  const [canvasSize, setCanvasSize] = useState({ width: 600, height: 400 }); // Default size or dynamically set
+  const [canvasSize, setCanvasSize] = useState({ width: 512, height: 512 }); // Default size or dynamically set
 
   useEffect(() => {
     const originalImageUrl = localStorage.getItem('image.png');
-    console.log(originalImageUrl)
     if (originalImageUrl) {
       const proxyUrl = `http://localhost:3001/fetch-image?url=${encodeURIComponent(originalImageUrl)}`;
       fetch(proxyUrl)
@@ -31,21 +30,21 @@ const AnnotationCanvas = ({ onDraw }) => {
         return;
     }
 
-    if (!fetchedImage) {
+    if (!fetchedImage1) {
         console.error('Fetched image is not available');
         return;
     }
 
     // Load the background image
     const backgroundImg = new Image();
-    backgroundImg.src = fetchedImage;
+    backgroundImg.src = fetchedImage1;
 
     backgroundImg.onload = async () => {
         // Use the natural dimensions of the fetched image or scale it
         // let width = backgroundImg.naturalWidth;
         // let height = backgroundImg.naturalHeight;
-        let width = 600;
-        let height = 400;
+        let width = 512;
+        let height = 512;
 
         // Export the ReactSketchCanvas drawing as an image
         const sketchDataUrl = await canvasRef.current.exportImage('image/png');
@@ -71,15 +70,18 @@ const AnnotationCanvas = ({ onDraw }) => {
             // Upload the combined image to the server
             uploadImageToServer(combinedDataUrl, 'image_sktech.png');
             localStorage.setItem('annotationDone', true);
-        };
+            localStorage.setItem('action', 'selection');
+          };
 
         const offscreenCanvas1 = document.createElement('canvas');
         offscreenCanvas1.width = width;
         offscreenCanvas1.height = height;
         const ctx1 = offscreenCanvas1.getContext('2d');
 
-        // Fill the canvas with black background
-        ctx1.fillStyle = '#000000'; // Set fill color to white
+        // Fill the canvas with white background
+        // ctx1.fillStyle = '#FFFFFF'; // Set fill color to white
+        ctx1.fillStyle = '#000000'; // Set fill color to black
+
         ctx1.fillRect(0, 0, width, height); // Fill the canvas area with white
 
         // Then overlay the sketch image
@@ -121,9 +123,9 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
   }
 };
 
-
-
   const goBackToChat = () => {
+    localStorage.setItem('annotationDone', true);
+    localStorage.setItem('action', 'selection');
     navigate('/text_gesture');
   };
 
@@ -140,25 +142,26 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
   // };
 
   return (
-  <div style={{ width: '90%', alignItems: 'center', marginTop: '20px', marginLeft: '20px'}}>
-      <h1 style={{ width: '80%', textAlign: 'center', marginBottom: '10px' }}>Select area of the Image that you would like to edit.</h1>
-    <div style={{ position: 'relative',justifyContent: 'center', width: '80%', height: '80%' }}>
+    <div style={{ alignItems: 'center',maxWidth: '100%',maxHeight: '100%', marginTop: '20px', marginLeft: '20px'}}>
+      <h1 style={{ marginBottom: '10px' }}>Select area of the Image that you would like to edit.</h1>
+    <div style={{ display: 'inline-block', cursor: 'pointer', position: 'relative', justifyContent: 'center', userSelect: 'none',  outline: 'none',maxHeight: '100%',maxHeight: '100%'}}>
       {/* Display image directly */}
-      <img src={fetchedImage} alt="Fetched" style={{ width: '90%', height: '90%', position: 'absolute', top: 0, left: '5%', zIndex: 0 }} />
-
-      {/* ReactSketchCanvas as overlay */}
       <ReactSketchCanvas
         ref={canvasRef}
         strokeWidth={100} // Adjusted for finer lines
         strokeColor="white"
         canvasColor="transparent"
         onChange={onDraw}
-        style={{ position: 'absolute', top: 0, left: '5%', width: '90%', height: '90%' }}
+        style={{ position: 'absolute', maxHeight: '100%',maxHeight: '100%' }}
       />
+      <img src={fetchedImage1} alt="Fetched" style={{ position: 'abosulte', maxHeight: '100%',maxHeight: '100%'}} />
+
+      {/* ReactSketchCanvas as overlay */}
+
     </div>
         
       {/* Buttons displayed below the canvas */}
-      <div style={{ display: 'flex', justifyContent: 'center', width: '80%' }}>
+      <div style={{ display: 'flex', width: '80%' }}>
         <button onClick={saveAnnotatedImage} style={buttonStyle}>
           Save Image
         </button>

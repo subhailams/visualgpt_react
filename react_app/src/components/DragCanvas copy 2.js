@@ -39,43 +39,48 @@ const DragCanvas = () => {
   };
   const dragTimeoutDuration = 100; // Time in milliseconds to wait for a second drag
   let dragTimeout;
-
   const bind = useDrag((state) => {
     const { down, initial, xy, last } = state;
     const imageRect = imageRef.current?.getBoundingClientRect();
-
-    // When the user starts dragging
+  
     if (down) {
       const startX = initial[0] - imageRect.left;
       const startY = initial[1] - imageRect.top;
       const startCoords = adjustCoordinates({ x: startX, y: startY });
-
-      // Start tracking drag1 if it hasn't started yet
-      if (!dragInfo.drag1.start && !dragInfo.drag1.end) {
+  
+      if (!dragInfo.drag1.start) {
+        // Start tracking the first drag
         setDragInfo(prev => ({ ...prev, drag1: { start: startCoords, end: null }, action: 'move' }));
-      } 
-      // Once drag1 is finished, start tracking drag2
-      else if (dragInfo.drag1.end && !dragInfo.drag2.start) {
+  
+        // Set a timeout to wait for a potential second drag for the 'remove' gesture
+        dragTimeout = setTimeout(() => {
+          if (!dragInfo.drag2.start) {
+            console.log(`Move action: Drag started at (${startCoords.x}, ${startCoords.y}) - waiting for possible remove gesture.`);
+          }
+        }, dragTimeoutDuration);
+      } else if (!dragInfo.drag2.start) {
+        // Clear the timeout and start tracking the second drag for the 'remove' gesture
+        clearTimeout(dragTimeout);
         setDragInfo(prev => ({ ...prev, drag2: { start: startCoords, end: null }, action: 'remove' }));
       }
     }
-
-    // When the user stops dragging
+  
     if (last) {
       const endX = xy[0] - imageRect.left;
       const endY = xy[1] - imageRect.top;
       const endCoords = adjustCoordinates({ x: endX, y: endY });
-
-      // Finish tracking drag1 if it's in progress
+  
       if (dragInfo.drag1.start && !dragInfo.drag1.end) {
+        // Finish tracking the first drag
         setDragInfo(prev => ({ ...prev, drag1: { ...prev.drag1, start: prev.drag1.start, end: endCoords } }));
-      } 
-      // Finish tracking drag2 if it's in progress
-      else if (dragInfo.drag2.start && !dragInfo.drag2.end) {
+      } else if (dragInfo.drag2.start && !dragInfo.drag2.end) {
+        // Finish tracking the second drag and finalize the 'remove' action
         setDragInfo(prev => ({ ...prev, drag2: { ...prev.drag2, start: prev.drag2.start, end: endCoords }, action: 'remove' }));
+        console.log("Remove action");
       }
     }
   });
+  
   
 
   useEffect(() => {
@@ -97,105 +102,21 @@ const DragCanvas = () => {
     }
   }, [dragInfo]);
   
-  const renderDragLine = () => {
-    return (
-      <svg style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', width: '100%', height: '100%' }}>
-        {dragInfo.drag1.start && dragInfo.drag1.end && (
-          // Line for the first drag action (move)
-          <line
-            x1={dragInfo.drag1.start.x}
-            y1={dragInfo.drag1.start.y}
-            x2={dragInfo.drag1.end.x}
-            y2={dragInfo.drag1.end.y}
-            stroke="white"
-            strokeWidth="2"
-            strokeDasharray="5,5"
-          />
-        )}
-        {dragInfo.drag2.start && dragInfo.drag2.end && (
-          // Line for the second drag action (remove)
-          <line
-            x1={dragInfo.drag2.start.x}
-            y1={dragInfo.drag2.start.y}
-            x2={dragInfo.drag2.end.x}
-            y2={dragInfo.drag2.end.y}
-            stroke="white"
-            strokeWidth="2"
-            strokeDasharray="5,5"
-          />
-        )}
-      </svg>
-    );
-  };
+ 
   
-  
-  const uploadImageToServer = async (imageDataUrl, filename) => {
-    // Convert data URL to blob for file upload
-    const response = await fetch(imageDataUrl);
-    const blob = await response.blob();
-    const formData = new FormData();
-    formData.append('image', blob, filename); // Use 'mask.png' or 'image.png' based on the argument
-  
-    const uploadEndpoint = 'http://localhost:3001/upload'; // Adjust if necessary
-    try {
-        const uploadResponse = await fetch(uploadEndpoint, {
-            method: 'POST',
-            body: formData,
-        });
-        
-        if (!uploadResponse.ok) throw new Error('Upload failed: ' + uploadResponse.statusText);
-        
-        const data = await uploadResponse.json();
-        console.log(`${filename} saved on server:`, data.imagePath);
-        localStorage.setItem(filename, data.imagePath); // Save path as mask.png or image.png
-    } catch (error) {
-        console.error('Upload failed:', error);
-    }
-  };
-  
-
-  const handleSave = async () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = imageRef.current.clientWidth;
-    canvas.height = imageRef.current.clientHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 2; // Adjust the line width as needed
-    ctx.setLineDash([5, 5]);
-  
-    // Draw the image
-    ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
-  
-    // Draw the line for the first drag action
-    if (dragInfo.drag1.start && dragInfo.drag1.end) {
-      ctx.beginPath();
-      ctx.moveTo(dragInfo.drag1.start.x, dragInfo.drag1.start.y);
-      ctx.lineTo(dragInfo.drag1.end.x, dragInfo.drag1.end.y);
-      ctx.stroke();
-    }
-  
-    // Draw the line for the second drag action (remove action)
-    if (dragInfo.drag2.start && dragInfo.drag2.end) {
-      ctx.beginPath();
-      ctx.moveTo(dragInfo.drag2.start.x, dragInfo.drag2.start.y);
-      ctx.lineTo(dragInfo.drag2.end.x, dragInfo.drag2.end.y);
-      ctx.stroke();
-    }
-  
-    // Convert canvas to data URL and upload
-    const dataUrl = canvas.toDataURL('image/png');
-    await uploadImageToServer(dataUrl, 'image_with_lines.png');
-  
-    // Logic to determine what action to save based on the drag information
-    if (dragInfo.drag1.end &&  !dragInfo.drag2.end) {
-      // Save as a move action if only the first drag is completed
-      const movePointsString = `${dragInfo.drag1.start.x} ${dragInfo.drag1.start.y} ${dragInfo.drag1.end.x} ${dragInfo.drag1.end.y}`;
+  const saveAnnotatedImage = () => {
+    // If there's only a completed first drag (move) or both drags completed (remove)
+    console.log(dragInfo.drag1.end)
+    console.log(dragInfo.drag2.start)
+    if (dragInfo.drag1.end && !dragInfo.drag2.end) {
+      // Save as a move action
+      const movePointsString = `${dragInfo.drag1.start.x},${dragInfo.drag1.start.y},${dragInfo.drag1.end.x},${dragInfo.drag1.end.y}`;
       localStorage.setItem('action', 'move');
       localStorage.setItem('move_points', movePointsString);
       console.log('Move action saved:', movePointsString);
     } else if (dragInfo.drag2.start && dragInfo.drag2.end) {
-      // Save as a remove action if both drags are completed
-      const removePointsString = `${dragInfo.drag1.start.x} ${dragInfo.drag1.start.y} ${dragInfo.drag1.end.x} ${dragInfo.drag1.end.y} ${dragInfo.drag2.start.x} ${dragInfo.drag2.start.y} ${dragInfo.drag2.end.x} ${dragInfo.drag2.end.y}`;
+      // Save as a remove action
+      const removePointsString = `${dragInfo.drag1.start.x},${dragInfo.drag1.start.y},${dragInfo.drag1.end.x},${dragInfo.drag1.end.y},${dragInfo.drag2.start.x},${dragInfo.drag2.start.y},${dragInfo.drag2.end.x},${dragInfo.drag2.end.y}`;
       localStorage.setItem('action', 'remove');
       localStorage.setItem('remove_points', removePointsString);
       console.log('Remove action saved:', removePointsString);
@@ -203,7 +124,6 @@ const DragCanvas = () => {
       console.log('No valid action to save.');
     }
   };
-  
   
   
 
@@ -220,7 +140,7 @@ const DragCanvas = () => {
 
   return (
     <div style={{ alignItems: 'center',maxWidth: '100%',maxHeight: '100%', marginTop: '20px', marginLeft: '20px'}}>
-      <h1 style={{ marginBottom: '1px' }}>Drag the object to move or Cross the object to remove</h1>
+      <h1 style={{marginBottom: '1px' }}>Drag the object you like to move</h1>
       <div {...bind()} style={{
             display: 'inline-block',
             cursor: 'pointer',
@@ -245,11 +165,10 @@ const DragCanvas = () => {
             outline: 'none'
           }}
         />
-         {renderDragLine()}
       </div>
       
       <div style={{ display: 'flex' }}>
-      <button onClick={handleSave} style={buttonStyle}>
+      <button onClick={saveAnnotatedImage} style={buttonStyle}>
       Save Gesture
     </button>
         <button onClick={goBackToChat} style={{ ...buttonStyle, marginLeft: '10px' }}>

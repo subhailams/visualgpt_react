@@ -46,6 +46,9 @@ class InstructPix2Pix:
         height_new = int(np.round(height_new / 64.0)) * 64
         image = image.resize((width_new, height_new))
         image = image.convert('RGB')
+        # image_tensor = torch.tensor(np.array(image)).permute(2, 0, 1).unsqueeze(0).to(torch.half)
+        # print("Here>>>>>>>>>>>>>>>>>>>>>>>>>>", self.torch_dtype)
+        # print("New >>>>>>>>",image_tensor.dtype)
         updated_image = self.pipe(prompt, image=image, num_inference_steps=40, image_guidance_scale=1.2).images[0]
         # updated_image_path = get_new_image_name("image/demo", func_name="pix2pix")
         # image.save(updated_image_path)

@@ -5,7 +5,7 @@ const Image = ({ url }) => {
   const navigate = useNavigate();
 
   const openAnnotationTool = () => {
-    navigate(`/annotate/${encodeURIComponent(url)}`); // Encode the url
+    navigate(`/canvas/${encodeURIComponent(url)}`); // Encode the url
   };
 
   return (

@@ -37,7 +37,7 @@ class InstructView(APIView):
             response = requests.get(image_url)
             image = BytesIO(response.content)
             pil_image = Image.open(image)  # Convert the downloaded image to a PIL Image
-
+            print("Here>>>>>>>>>>>>>>>>>>>>>>>>>>")
             # Call the inference function and get a PIL Image back
             updated_image = instruct.inference(pil_image, prompt)
 

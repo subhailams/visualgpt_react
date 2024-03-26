@@ -30,9 +30,13 @@ const App = () => {
             {/* <Route path="/annotate/:imageUrl" element={<MainCanvas />} /> Use route parameter :imageUrl */}
             {/* <Route path="/annotate/:imageUrl" element={<ResizeCanvas />} /> Use route parameter :imageUrl */}
 
-            {/* <Route path="/annotate/:imageUrl" element={<AnnotationCanvas />} /> Use route parameter :imageUrl */}
-            <Route path="/annotate/:imageUrl" element={<DragCanvas />} /> Use route parameter :imageUrl
-
+            {/* <Route path="/annotate/:imageUrl" element={<AnnotationCanvas />} /> Use route parameter :imageUrl
+            <Route path="/drag/:imageUrl" element={<MainCanvas />} /> Use route parameter :imageUrl */}
+            <Route path="/canvas/:imageUrl" element={<MainCanvas />}>
+              <Route index element={<AnnotationCanvas />} />
+              <Route path="annotate" element={<AnnotationCanvas />} />
+              <Route path="drag" element={<DragCanvas />} />
+            </Route>
          </Routes>
         </div>
       </Router>

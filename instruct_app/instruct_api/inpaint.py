@@ -9,7 +9,7 @@ class Inpainting:
                 torch_dtype=torch.float16,
             )
             
-            self.pipe.to("cuda")
+            self.pipe.to("cuda:1")
 
         def inference(self, image,mask_image, prompt):
             #image and mask_image should be PIL images.

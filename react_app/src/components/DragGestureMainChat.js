@@ -15,7 +15,7 @@ const DragGestureMainChat = () => {
   const defaultPrompt = 'Enter prompt to generate image';
   const [formValue, setFormValue] = useState(defaultPrompt);
   const [loading, setLoading] = useState(false);
-  const options = ['VisualGPT'];
+  const options = ['selection', 'gesture'];
   const [selected, setSelected] = useState(options[0]);
   const [messages, addMessage] = useContext(ChatContext);
   const [isannotationDone, setAnnotationDone] = useState(false);
@@ -181,7 +181,7 @@ const DragGestureMainChat = () => {
         try {
 
           setLoading(true);
-          console.log("Generating....")
+          console.log("Initial Generating....")
 
           setGenerationDone(true);
           setLoading(false);
@@ -197,57 +197,55 @@ const DragGestureMainChat = () => {
   }
 
     
-  // if (isannotationDone) {
+  if (isannotationDone) {
   
-  //   console.log("Moving....")
+    console.log("Inpainting....")
 
-  //   const originalImageUrl = localStorage.getItem('image.png');
+    const originalImageUrl = localStorage.getItem('image.png');
     
-  //   const maskurl = localStorage.getItem('mask.png');
-  //   const selected_points = localStorage.getItem('selected_points')
+    const maskurl = localStorage.getItem('mask.png');
 
-  //   console.log(originalImageUrl)
-  //   console.log(maskurl)
-  //   console.log(selected_points)
+    console.log(originalImageUrl)
+    console.log(maskurl)
 
-  //   // Code to call the instruct api to get image url
-  //     try {
-  //       // Construct the request to the Express server which will forward it to Django
-  //       const dragResponse = await fetch('http://localhost:3001/move', {
-  //         method: 'POST',
-  //         headers: {
-  //           'Content-Type': 'application/json'
-  //         },
-  //         body: JSON.stringify({
-  //           image_url: originalImageUrl, // Ensure this is the correct URL or path to the image
-  //           mask_url: maskurl,
-  //           selected_points: selected_points, // The user's input that will be used for processing
-  //         })
-  //       });
+      // Code to call the instruct api to get image url
+      try {
+        // Construct the request to the Express server which will forward it to Django
+        const inpaintResponse = await fetch('http://localhost:3001/inpaint', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            image_url: originalImageUrl, // Ensure this is the correct URL or path to the image
+            mask_url: maskurl,
+            prompt: formValue, // The user's input that will be used for processing
+          })
+        });
 
-  //       if (!dragResponse.ok) {
-  //         throw new Error(`HTTP error! Status: ${dragResponse.status}`);
-  //       }
+        if (!inpaintResponse.ok) {
+          throw new Error(`HTTP error! Status: ${inpaintResponse.status}`);
+        }
 
-  //       const inpaintData = await dragResponse.json();
-  //       console.log("drag response: ",inpaintData)
-  //       // Assuming inpaintData contains the URL to the processed image
-  //       if (inpaintData) {
-  //         // Update the chat with the new image
-  //         console.log(inpaintData.image_url)
-  //         // uploadImageToServer(inpaintData.image_url, 'image_new.png')
-  //         localStorage.setItem('image.png', inpaintData.image_url);
-  //         await sleep(100)
-  //         updateMessage(inpaintData.image_url, true, aiModel, true); // Update with the image path
-  //         setLoading(false);
-  //       }
-  //     } catch (error) {
-  //       console.error('Error calling inpaint API:', error);
-  //       setLoading(false);
-  //       // Handle the error, maybe show a message to the user
-  //     }
+        const inpaintData = await inpaintResponse.json();
+        console.log("drag response: ",inpaintData)
+        // Assuming inpaintData contains the URL to the processed image
+        if (inpaintData) {
+          // Update the chat with the new image
+          console.log(inpaintData.image_url)
+          // uploadImageToServer(inpaintData.image_url, 'image_new.png')
+          localStorage.setItem('image.png', inpaintData.image_url);
+          await sleep(100)
+          updateMessage(inpaintData.image_url, true, aiModel, true); // Update with the image path
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error calling inpaint API:', error);
+        setLoading(false);
+        // Handle the error, maybe show a message to the user
+      }
     
-  // }
+  }
 
 };
   
@@ -293,121 +291,194 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
   }, []);
 
   const checkAndSendAnnotatedImage = async () => {
+    const action = localStorage.getItem('action');
+    console.log("Action",action)
     const resizeDone = JSON.parse(localStorage.getItem('resizeDone'));
     console.log("Resize",isresizeDone)
 
-    if(resizeDone){
-
-       setLoading(true);
-       updateMessage('Resizing in progress..',true, "filler", false);
-        console.log("Resizing....")
-  
-        const originalImageUrl = localStorage.getItem('image.png');
+    if(action == 'move'){
         
-        const maskurl = localStorage.getItem('mask.png');
-        const resize_scale = JSON.parse(localStorage.getItem('resize_scale'))
-    
-        console.log(originalImageUrl)
-        console.log(maskurl)
-        console.log(resize_scale)
-    
-        // Code to call the instruct api to get image url
-          try {
-            // Construct the request to the Express server which will forward it to Django
-            const dragResponse = await fetch('http://localhost:3001/resize', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                image_url: originalImageUrl, // Ensure this is the correct URL or path to the image
-                mask_url: maskurl,
-                resize_scale: resize_scale, // The user's input that will be used for processing
-              })
-            });
-    
-            if (!dragResponse.ok) {
-              throw new Error(`HTTP error! Status: ${dragResponse.status}`);
-            }
-    
-            const inpaintData = await dragResponse.json();
-            console.log("drag response: ",inpaintData)
-            // Assuming inpaintData contains the URL to the processed image
-            if (inpaintData) {
-              // Update the chat with the new image
-              console.log(inpaintData.image_url)
-              // uploadImageToServer(inpaintData.image_url, 'image_new.png')
-              localStorage.setItem('image.png', inpaintData.image_url);
-              await sleep(100)
-              updateMessage(inpaintData.image_url, true, selected, true); // Update with the image path
-              setLoading(false);
-            }
-          } catch (error) {
-            console.error('Error calling inpaint API:', error);
-            setLoading(false);
-            // Handle the error, maybe show a message to the user
+        const image_line = "http://localhost:3001/uploads/image_with_lines.png"
+
+        updateMessage(image_line, false, "User", true);
+        updateMessage('Moving the object based on above gesture',true, "filler", false);
+
+        console.log("Moving....")
+
+        const originalImageUrl1 = localStorage.getItem('image.png');
+        
+        const maskurl1 = "http://localhost:3001/uploads/object_mask.png"
+
+        const selected_points1 = localStorage.getItem('move_points')
+        console.log(originalImageUrl1)
+        console.log(maskurl1)
+        console.log(selected_points1)
+
+        setLoading(true)
+        try {
+          // Construct the request to the Express server which will forward it to Django
+          const dragResponse = await fetch('http://localhost:3001/move', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              image_url: originalImageUrl1, // Ensure this is the correct URL or path to the image
+              mask_url: maskurl1,
+              selected_points: selected_points1, // The user's input that will be used for processing
+            })
+          });
+
+          if (!dragResponse.ok) {
+            throw new Error(`HTTP error! Status: ${dragResponse.status}`);
           }
-  
-    
+
+          const inpaintData = await dragResponse.json();
+          console.log("drag response: ",inpaintData)
+          // Assuming inpaintData contains the URL to the processed image
+          if (inpaintData) {
+            // Update the chat with the new image
+            console.log(inpaintData.image_url)
+            // uploadImageToServer(inpaintData.image_url, 'image_new.png')
+            localStorage.setItem('image.png', inpaintData.image_url);
+            await sleep(100)
+            updateMessage(inpaintData.image_url, true, selected, true); // Update with the image path
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('Error calling move API:', error);
+          setLoading(false);
+          setAnnotationDone(false);
+          // Handle the error, maybe show a message to the user
+        }
+        
+        
     }
-    else{
-    const originalImageUrl = localStorage.getItem('image.png');
-    
-    const maskurl = localStorage.getItem('mask.png');
+    else if(action == 'remove'){
 
-    const selected_points = localStorage.getItem('selected_points')
-    console.log(originalImageUrl)
-    console.log(maskurl)
-    console.log(selected_points)
-    setLoading(false);
-    updateMessage('http://localhost:3001/uploads/image_with_arrow.png', true, selected, true);
-    updateMessage('You have made above move. Moving the object...', true, selected, false )
+      const image_line = "http://localhost:3001/uploads/image_with_lines.png"
 
-    const originalImageUrl1 = localStorage.getItem('image.png');
-    
-    const maskurl1 = localStorage.getItem('mask.png');
+      updateMessage(image_line, false, "User", true);
+      updateMessage('Removing the object based on above gesture',true, "filler", false);
+      console.log("Removing....")
+      setLoading(true);
+      const formValue1 = "Remove the apple";
 
-    const selected_points1 = localStorage.getItem('selected_points')
-    console.log(originalImageUrl)
-    console.log(maskurl)
-    console.log(selected_points)
+      const originalImageUrl = localStorage.getItem('image.png');
 
-    setLoading(true)
+
+
+      // Code to call the instruct api to get image url
+        try {
+          // Construct the request to the Express server which will forward it to Django
+          const instructResponse = await fetch('http://localhost:3001/instruct', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              image_url: originalImageUrl, // Ensure this is the correct URL or path to the image
+              prompt: formValue1, // The user's input that will be used for processing
+            })
+          });
+
+          if (!instructResponse.ok) {
+            throw new Error(`HTTP error! Status: ${instructResponse.status}`);
+          }
+
+          const instructData = await instructResponse.json();
+          console.log(instructData)
+          // Assuming instructData contains the URL to the processed image
+          if (instructData) {
+            // Update the chat with the new image
+            console.log(instructData.image_url)
+            // uploadImageToServer(instructData.image_url, 'image.png')
+            localStorage.setItem('image.png', instructData.image_url);
+            updateMessage(instructData.image_url, true, selected, true); // Update with the image path
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('Error calling instruct API:', error);
+          setLoading(false);
+          setAnnotationDone(false);
+          // Handle the error, maybe show a message to the user
+        }
+    }
+
+    else if(action == 'resize'){
+       const resize_img = "http://localhost:3001/uploads/resize_image.png"
+       setLoading(true);
+       updateMessage(resize_img, false, "User", true);
+       updateMessage('Resizing the object based on above gesture',true, "filler", false);
+       console.log("Resizing....")
+ 
+       const originalImageUrl = localStorage.getItem('image.png');
+       
+       const maskurl = localStorage.getItem('mask.png');
+       const resize_scale = JSON.parse(localStorage.getItem('resize_scale'))
+   
+       console.log(originalImageUrl)
+       console.log(maskurl)
+       console.log(resize_scale)
+   
+       // Code to call the instruct api to get image url
+         try {
+           // Construct the request to the Express server which will forward it to Django
+           const dragResponse = await fetch('http://localhost:3001/resize', {
+             method: 'POST',
+             headers: {
+               'Content-Type': 'application/json'
+             },
+             body: JSON.stringify({
+               image_url: originalImageUrl, // Ensure this is the correct URL or path to the image
+               mask_url: maskurl,
+               resize_scale: resize_scale, // The user's input that will be used for processing
+             })
+           });
+   
+           if (!dragResponse.ok) {
+             throw new Error(`HTTP error! Status: ${dragResponse.status}`);
+           }
+   
+           const inpaintData = await dragResponse.json();
+           console.log("drag response: ",inpaintData)
+           // Assuming inpaintData contains the URL to the processed image
+           if (inpaintData) {
+             // Update the chat with the new image
+             console.log(inpaintData.image_url)
+             // uploadImageToServer(inpaintData.image_url, 'image_new.png')
+             localStorage.setItem('image.png', inpaintData.image_url);
+             await sleep(100)
+             updateMessage(inpaintData.image_url, true, selected, true); // Update with the image path
+             setLoading(false);
+             setAnnotationDone(false);
+           }
+         } catch (error) {
+           console.error('Error calling inpaint API:', error);
+           setLoading(false);
+           // Handle the error, maybe show a message to the user
+         }
+
+  }
+
+  else if(action == 'selection'){
+    console.log("Selection")
+
     try {
-      // Construct the request to the Express server which will forward it to Django
-      const dragResponse = await fetch('http://localhost:3001/move', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          image_url: originalImageUrl1, // Ensure this is the correct URL or path to the image
-          mask_url: maskurl1,
-          selected_points: selected_points1, // The user's input that will be used for processing
-        })
-      });
-
-      if (!dragResponse.ok) {
-        throw new Error(`HTTP error! Status: ${dragResponse.status}`);
-      }
-
-      const inpaintData = await dragResponse.json();
-      console.log("drag response: ",inpaintData)
-      // Assuming inpaintData contains the URL to the processed image
-      if (inpaintData) {
-        // Update the chat with the new image
-        console.log(inpaintData.image_url)
-        // uploadImageToServer(inpaintData.image_url, 'image_new.png')
-        localStorage.setItem('image.png', inpaintData.image_url);
-        await sleep(100)
-        updateMessage(inpaintData.image_url, true, selected, true); // Update with the image path
-        setLoading(false);
+      // Fetch the annotated image from the server
+      const response = await fetch('http://localhost:3001/uploads/image_sktech.png');
+  
+      // Check if the response is OK (status code 200)
+      if (response.ok) {
+        // If the image exists, update the message with the annotated image URL
+        updateMessage('http://localhost:3001/uploads/image_sktech.png', false, "User", true); // Assuming `true` flags an image message
+        updateMessage('What would you like to edit in this image?',true, "filler", false);
       }
     } catch (error) {
-      console.error('Error calling move API:', error);
-      setLoading(false);
-      // Handle the error, maybe show a message to the user
+      // If an error occurs during the fetch request, log the error
+      console.error('Error fetching annotated image:', error);
     }
+    setAnnotationDone(true);
   }
   };
 
@@ -416,20 +487,13 @@ const uploadImageToServer = async (imageDataUrl, filename) => {
 useEffect(() => {
   // Get the annotationDone value from local storage
   const annotationDone = JSON.parse(localStorage.getItem('annotationDone'));
-  const resizeDone = JSON.parse(localStorage.getItem('resizeDone'));
-  // console.log("Resize first", resizeDone)
-  // if (resizeDone) {
-  //   checkAndSendAnnotatedImage();
-  //   setresizeDone(true);
-  //   localStorage.setItem('resizeDone', false);
-  // }
-  
-
+  console.log(annotationDone, " Annotation");
   // Check if annotationDone is true
   if (annotationDone) {
+    console.log("Annotation")
       
       checkAndSendAnnotatedImage();
-      setAnnotationDone(true);
+      setAnnotationDone(false);
       localStorage.setItem('annotationDone', false);
       
   }
@@ -452,11 +516,15 @@ useEffect(() => {
         <span ref={messagesEndRef}></span>
       </main>
       <form className='form' onSubmit={sendMessage}>
-        {/* <select
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-          className='dropdown'>
-          <option>{options[0]}</option>
+      {/* <select
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+            className='dropdown'>
+            {options.map((option, index) => (
+                <option key={index} value={option}>
+                    {option}
+                </option>
+            ))}
         </select> */}
         <div className='flex items-stretch justify-between w-full'>
           <textarea

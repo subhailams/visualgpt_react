@@ -334,12 +334,12 @@ useEffect(() => {
         <span ref={messagesEndRef}></span>
       </main>
       <form className='form' onSubmit={sendMessage}>
-        {/* <select
+        { <select
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
           className='dropdown'>
           <option>{options[0]}</option>
-        </select> */}
+        </select> }
         <div className='flex items-stretch justify-between w-full'>
           <textarea
             ref={inputRef}

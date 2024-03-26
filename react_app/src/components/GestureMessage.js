@@ -21,6 +21,18 @@ const isBase64Image = (str) => {
   return regex.test(str);
 };
 
+const messageImgStyle = {
+  borderRadius: '0.5rem', // Equivalent to rounded-lg in Tailwind
+  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', // Equivalent to shadow-lg
+  backgroundSize: 'cover', // Equivalent to bg-cover
+  backgroundColor: '#a0aec0', // Equivalent to bg-gray-400
+  width: '512px', // Custom width
+  transitionDuration: '300ms', // Equivalent to duration-300
+  transitionTimingFunction: 'ease-out', // Equivalent to ease-out
+  float: 'right', // Floats the element to the right
+};
+
+
 const Message = (props) => {
   const { id, createdAt, content, ai = false, selected, isImage } = props.message;
 
@@ -28,74 +40,78 @@ const Message = (props) => {
     <div
       key={id}
       className={`${ai && 'flex-row-reverse bg-light-white'} message`}>
-      {selected === 'VisualGPT' && ai ? (
-        isImage ? (
-          // <img className='message__img' src={content} alt="Annotated" />
-          <Image url={content}/>
-        ) : (
-          <div className='message__wrapper'>
-            <ReactMarkdown
-              className={`message__markdown ${ai ? 'text-left' : 'text-right'}`}
-              children={content}
-              remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
-              components={{
-                code({ node, inline, className, children, ...props }) {
-                  const match = /language-(\w+)/.exec(className || 'language-js');
-                  return !inline && match ? (
-                    <SyntaxHighlighter
-                      children={String(children).replace(/\n$/, '')}
-                      style={atomDark}
-                      language={match[1]}
-                      PreTag='div'
-                      {...props}
-                    />
-                  ) : (
-                    <code className={className} {...props}>
-                      {children}{' '}
-                    </code>
-                  );
-                },
-              }}
-            />
+      {ai ? (
+  isImage ? (
+    // Render image for AI messages
+    <Image url={content} />
+  ) : (
+    // Render text for AI messages
+    <div className='message__wrapper'>
+      <ReactMarkdown
+        className={`message__markdown ${ai ? 'text-left' : 'text-right'}`}
+        children={content}
+        remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+        components={{
+          code({ node, inline, className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || 'language-js');
+            return !inline && match ? (
+              <SyntaxHighlighter
+                children={String(children).replace(/\n$/, '')}
+                style={atomDark}
+                language={match[1]}
+                PreTag='div'
+                {...props}
+              />
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+        }}
+      />
+      <div className={`${ai ? 'text-left' : 'text-right'} message__createdAt`}>
+        {moment(createdAt).calendar()}
+      </div>
+    </div>
+  )
+) : (
+  isImage ? (
+    // Render image for non-AI messages
+  <img src={content} style={messageImgStyle} />
+  ) : (
+    // Render text for non-AI messages
+    <div className='message__wrapper'>
+      <ReactMarkdown
+        className={`message__markdown ${ai ? 'text-left' : 'text-right'}`}
+        children={content}
+        remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+        components={{
+          code({ node, inline, className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || 'language-js');
+            return !inline && match ? (
+              <SyntaxHighlighter
+                children={String(children).replace(/\n$/, '')}
+                style={atomDark}
+                language={match[1]}
+                PreTag='div'
+                {...props}
+              />
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+        }}
+      />
+      <div className={`${ai ? 'text-left' : 'text-right'} message__createdAt`}>
+        {moment(createdAt).calendar()}
+      </div>
+    </div>
+  )
+)}
 
-            <div
-              className={`${ai ? 'text-left' : 'text-right'} message__createdAt`}>
-              {moment(createdAt).calendar()}
-            </div>
-          </div>
-        )
-      ) : (
-        <div className='message__wrapper'>
-          <ReactMarkdown
-            className={`message__markdown ${ai ? 'text-left' : 'text-right'}`}
-            children={content}
-            remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
-            components={{
-              code({ node, inline, className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || 'language-js');
-                return !inline && match ? (
-                  <SyntaxHighlighter
-                    children={String(children).replace(/\n$/, '')}
-                    style={atomDark}
-                    language={match[1]}
-                    PreTag='div'
-                    {...props}
-                  />
-                ) : (
-                  <code className={className} {...props}>
-                    {children}{' '}
-                  </code>
-                );
-              },
-            }}
-          />
-
-          <div
-            className={`${ai ? 'text-left' : 'text-right'} message__createdAt`}>
-            {moment(createdAt).calendar()}
-          </div>
-        </div>
-      )}
 
       <div className='message__pic'>
         {ai ? (
